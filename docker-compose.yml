@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # Servicio de la Base de Datos PostgreSQL
+  db:
+    image: postgres:14-alpine
+    container_name: pis_db_container
+    ports:
+      - "5432:5432" 
+    environment:
+      POSTGRES_DB: pis_db
+      POSTGRES_USER: pis_user
+      POSTGRES_PASSWORD: mysecretpassword
+    volumes:
+      - pis_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    
+    # 🌟 NUEVA SECCIÓN: HEALTHCHECK
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pis_user -d pis_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Servicio del Backend .NET Core
+  backend:
+    build:
+      context: . 
+      dockerfile: Dockerfile 
+    container_name: bolsafeucn_backend
+    ports:
+      - "5000:8080" 
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=pis_db;Username=pis_user;Password=mysecretpassword"
+      
+    # 🌟 CAMBIO CLAVE EN DEPENDENCIAS
+    # Asegura que la BD no solo exista, sino que esté lista para recibir conexiones
+    depends_on:
+      db:
+        condition: service_healthy 
+    restart: unless-stopped
+
+volumes:
+  pis_data:
+    driver: local
