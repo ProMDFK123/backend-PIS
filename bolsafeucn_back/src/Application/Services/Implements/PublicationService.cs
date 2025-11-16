@@ -54,6 +54,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                     "Solo usuarios tipo Empresa o Particular pueden crear ofertas."
                 );
             }
+            // ... (Validaciones de fechas - Mantener tal cual)
             if (offerDTO.EndDate <= DateTime.UtcNow)
             {
                 throw new InvalidOperationException(
@@ -66,51 +67,44 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                     "La fecha límite de postulación (DeadlineDate) debe ser anterior a la fecha de finalización de la oferta."
                 );
             }
-            try
+
+            // INICIA LA LÓGICA DE PERSISTENCIA DIRECTAMENTE
+            var offer = new Offer
             {
-                var offer = new Offer
-                {
-                    Title = offerDTO.Title,
-                    Description = offerDTO.Description,
-                    PublicationDate = DateTime.UtcNow,
-                    EndDate = offerDTO.EndDate,
-                    DeadlineDate = offerDTO.DeadlineDate,
-                    Remuneration = (int)offerDTO.Remuneration,
-                    OfferType = offerDTO.OfferType,
-                    Location = offerDTO.Location,
-                    Requirements = offerDTO.Requirements,
-                    ContactInfo = offerDTO.ContactInfo,
-                    IsCvRequired = offerDTO.IsCvRequired,
-                    UserId = currentUser.Id,
-                    User = currentUser,
-                    Type = Types.Offer,
-                    statusValidation = StatusValidation.InProcess,
-                    IsActive = false,
-                };
+                Title = offerDTO.Title,
+                Description = offerDTO.Description,
+                PublicationDate = DateTime.UtcNow,
+                EndDate = offerDTO.EndDate,
+                DeadlineDate = offerDTO.DeadlineDate,
+                Remuneration = (int)offerDTO.Remuneration,
+                OfferType = offerDTO.OfferType,
+                Location = offerDTO.Location,
+                Requirements = offerDTO.Requirements,
+                ContactInfo = offerDTO.ContactInfo,
+                IsCvRequired = offerDTO.IsCvRequired,
+                UserId = currentUser.Id,
+                User = currentUser,
+                Type = Types.Offer,
+                statusValidation = StatusValidation.InProcess,
+                IsActive = false,
+            };
 
-                var createdOffer = await _offerRepository.CreateOfferAsync(offer);
+            // Si _offerRepository.CreateOfferAsync falla, lanzará una excepción
+            // (gracias a que BuySellRepository.cs y OfferRepository.cs la relanzan)
+            // y esta será capturada por el controlador como un 500.
+            var createdOffer = await _offerRepository.CreateOfferAsync(offer);
 
-                _logger.LogInformation(
-                    "Oferta creada exitosamente. ID: {OfferId}, Título: {Title}, Usuario: {UserId}",
-                    createdOffer.Id,
-                    createdOffer.Title,
-                    currentUser.Id
-                );
+            _logger.LogInformation(
+                "Oferta creada exitosamente. ID: {OfferId}, Título: {Title}, Usuario: {UserId}",
+                createdOffer.Id,
+                createdOffer.Title,
+                currentUser.Id
+            );
 
-                return new GenericResponse<string>(
-                    "Oferta creada exitosamente",
-                    $"Oferta ID: {createdOffer.Id}"
-                );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Error al crear oferta para el usuario {UserId}",
-                    currentUser.Id
-                );
-                return new GenericResponse<string>($"Error al crear la oferta: {ex.Message}", null);
-            }
+            return new GenericResponse<string>(
+                "Oferta creada exitosamente",
+                $"Oferta ID: {createdOffer.Id}"
+            );
         }
 
         /// <summary>
@@ -121,6 +115,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             GeneralUser currentUser
         )
         {
+            // Validaciones de negocio (si fallan, lanzan excepción que el controller manejará como 403)
             if (
                 currentUser.UserType != UserType.Empresa
                 && currentUser.UserType != UserType.Particular
@@ -131,50 +126,38 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                     "Solo usuarios tipo Empresa o Particular pueden crear publicaciones de compra/venta."
                 );
             }
-            try
+
+            // El try-catch de DB es eliminado para que los errores se propaguen al controlador
+            var buySell = new BuySell
             {
-                var buySell = new BuySell
-                {
-                    Title = buySellDTO.Title,
-                    Description = buySellDTO.Description,
-                    UserId = currentUser.Id,
-                    User = currentUser,
-                    Type = Types.BuySell,
-                    Price = buySellDTO.Price,
-                    Category = buySellDTO.Category,
-                    Location = buySellDTO.Location,
-                    ContactInfo = buySellDTO.ContactInfo,
-                    PublicationDate = DateTime.UtcNow,
-                    statusValidation = StatusValidation.InProcess,
-                    IsActive = false,
-                };
+                Title = buySellDTO.Title,
+                Description = buySellDTO.Description,
+                UserId = currentUser.Id,
+                User = currentUser,
+                Type = Types.BuySell,
+                Price = buySellDTO.Price,
+                Category = buySellDTO.Category,
+                Location = buySellDTO.Location,
+                ContactInfo = buySellDTO.ContactInfo,
+                PublicationDate = DateTime.UtcNow,
+                statusValidation = StatusValidation.InProcess,
+                IsActive = false,
+            };
 
-                var createdBuySell = await _buySellRepository.CreateBuySellAsync(buySell);
+            // La falla REAL (DB) ocurre dentro de esta llamada
+            var createdBuySell = await _buySellRepository.CreateBuySellAsync(buySell);
 
-                _logger.LogInformation(
-                    "Publicación de compra/venta creada exitosamente. ID: {BuySellId}, Título: {Title}, Usuario: {UserId}",
-                    createdBuySell.Id,
-                    createdBuySell.Title,
-                    currentUser.Id
-                );
+            _logger.LogInformation(
+                "Publicación de compra/venta creada exitosamente. ID: {BuySellId}, Título: {Title}, Usuario: {UserId}",
+                createdBuySell.Id,
+                createdBuySell.Title,
+                currentUser.Id
+            );
 
-                return new GenericResponse<string>(
-                    "Publicación de compra/venta creada exitosamente",
-                    $"Publicación ID: {createdBuySell.Id}"
-                );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Error al crear publicación de compra/venta para el usuario {UserId}",
-                    currentUser.Id
-                );
-                return new GenericResponse<string>(
-                    $"Error al crear la publicación de compra/venta: {ex.Message}",
-                    null
-                );
-            }
+            return new GenericResponse<string>(
+                "Publicación de compra/venta creada exitosamente",
+                $"Publicación ID: {createdBuySell.Id}"
+            );
         }
 
         public async Task<IEnumerable<PublicationsDTO>> GetMyPublishedPublicationsAsync(
