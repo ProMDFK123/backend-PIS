@@ -10,7 +10,7 @@ namespace bolsafeucn_back.src.Application.DTOs.JobAplicationDTO
     /// </summary>
     public class ViewApplicantsDto
     {
-        public string Applicant { get; set; }
+        public required string Applicant { get; set; }
         public string Status { get; set; } = string.Empty;
     }
 }

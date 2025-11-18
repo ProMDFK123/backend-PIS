@@ -12,8 +12,8 @@ namespace bolsafeucn_back.src.Application.DTOs.JobAplicationDTO
     public class ViewApplicantDetailAdminDto
     {
         public string StudentName { get; set; } = string.Empty;
-        public string Email { get; set; }
-        public string PhoneNumber { get; set; }
-        public string Status { get; set; }
+        public required string Email { get; set; }
+        public required string PhoneNumber { get; set; }
+        public required string Status { get; set; }
     }
 }

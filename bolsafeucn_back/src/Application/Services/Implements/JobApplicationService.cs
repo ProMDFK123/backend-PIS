@@ -249,11 +249,16 @@ namespace bolsafeucn_back.src.Application.Services.Implements
         public async Task<ViewApplicantDetailAdminDto> GetApplicantDetailForAdmin(int studentId)
         {
             var applicant = await _jobApplicationRepository.GetByIdAsync(studentId);
+            if (applicant == null)
+            {
+                throw new KeyNotFoundException($"Job application with id {studentId} not found");
+            }
+            
             return new ViewApplicantDetailAdminDto
             {
-                StudentName = $"{applicant.Student.Student?.Name} {applicant.Student.Student?.LastName}",
-                Email = applicant.Student.Email,
-                PhoneNumber = applicant.Student.PhoneNumber,
+                StudentName = $"{applicant.Student.Student?.Name ?? ""} {applicant.Student.Student?.LastName ?? ""}".Trim(),
+                Email = applicant.Student.Email ?? string.Empty,
+                PhoneNumber = applicant.Student.PhoneNumber ?? string.Empty,
                 Status = applicant.Status
                 // TODO: falta descripcion
             };
