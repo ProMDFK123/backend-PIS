@@ -14,10 +14,18 @@ namespace bolsafeucn_back.src.Domain.Models
     {
         public required UserType UserType { get; set; }
         public required string Rut { get; set; }
+        public string AboutMe { get; set; } = string.Empty;
         public required bool Banned { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        
         public ICollection<Publication> Publications { get; set; } = new List<Publication>();
+
+        //Imagenes
+        public int? ProfilePhotoId { get; set; }
+        public UserImage? ProfilePhoto { get; set; } = null;
+        public int? ProfileBannerId { get; set; }
+        public UserImage? ProfileBanner { get; set; } = null;
 
         //Coneccion con los tipos de usuario
         public Student? Student { get; set; }

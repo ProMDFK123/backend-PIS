@@ -1,0 +1,3 @@
+# Excluye los directorios de compilación
+**/bin/
+**/obj/

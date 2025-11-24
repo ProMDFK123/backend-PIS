@@ -8,13 +8,14 @@ namespace bolsafeucn_back.src.Application.DTOs.PublicationDTO
 {
     public class PublicationsDTO
     {
-        int IdPublication { get; set; }
-        string Title { get; set; }
-        Types types { get; set; }
-        string Description { get; set; }
-        DateTime PublicationDate { get; set; }
-        ICollection<Image> Images { get; set; }
-        bool IsActive { get; set; }
-        StatusValidation statusValidation { get; set; }
+        public int IdPublication { get; set; }
+        public int UserId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public Types types { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public DateTime PublicationDate { get; set; }
+        public ICollection<Image> Images { get; set; } = new List<Image>();
+        public bool IsActive { get; set; }
+        public StatusValidation statusValidation { get; set; }
     }
 }

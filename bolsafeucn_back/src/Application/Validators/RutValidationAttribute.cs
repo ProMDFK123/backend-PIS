@@ -42,8 +42,9 @@ namespace bolsafeucn_back.src.Application.Validators
                 {
                     return ValidationResult.Success;
                 }
+                return new ValidationResult("El Rut no es válido.");
             }
-            return new ValidationResult("El Rut no es válido.");
+            return ValidationResult.Success;
         }
     }
 }

@@ -11,11 +11,31 @@ namespace bolsafeucn_back.src.Application.DTOs.OfferDTOs
         /// <summary>
         /// Offer title.
         /// </summary>
+        public int Id { get; set; }
+
+        /// <summary>
+        /// Offer title.
+        /// </summary>
         public required string Title { get; set; }
 
         /// <summary>
-        /// Publication type (Offer, BuySell).
+        /// Full offer description.
         /// </summary>
-        public Types Type { get; set; }
+        public required string Description { get; set; }
+
+        /// <summary>
+        /// Location of the offer (optional).
+        /// </summary>
+        public string? Location { get; set; }
+
+        /// <summary>
+        /// Publication date of the offer.
+        /// </summary>
+        public DateTime PostDate { get; set; }
+
+        /// <summary>
+        /// Remuneration offered (integer value).
+        /// </summary>
+        public required int Remuneration { get; set; }
     }
 }

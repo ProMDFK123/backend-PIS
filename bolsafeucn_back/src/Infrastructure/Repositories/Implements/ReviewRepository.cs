@@ -117,5 +117,12 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
                 .Include(r => r.Offeror)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Publication>> GetPublicationInformationAsync(int publicationId)
+        {
+            return await _context.Publications
+                .Where(p => p.Id == publicationId)
+                .ToListAsync();
+        }
     }
 }

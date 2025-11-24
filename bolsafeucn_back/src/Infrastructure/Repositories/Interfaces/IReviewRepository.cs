@@ -60,5 +60,6 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Interfaces
         /// </summary>
         /// <returns></returns>
         Task<IEnumerable<Review>> GetAllAsync();
+        Task<IEnumerable<Publication>> GetPublicationInformationAsync(int publicationId);
     }
 }

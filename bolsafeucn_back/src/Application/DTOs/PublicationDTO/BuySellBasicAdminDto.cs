@@ -7,6 +7,7 @@ namespace bolsafeucn_back.src.Application.DTOs.PublicationDTO
     /// </summary>
     public class BuySellBasicAdminDto
     {
+        public int Id { get; set; }
         public string Title { get; set; }
         public string NameOwner { get; set; }
         public DateTime PublicationDate { get; set; }

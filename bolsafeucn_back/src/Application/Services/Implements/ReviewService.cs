@@ -1,3 +1,4 @@
+using bolsafeucn_back.src.Application.DTOs.PublicationDTO;
 using bolsafeucn_back.src.Application.DTOs.ReviewDTO;
 using bolsafeucn_back.src.Application.Mappers;
 using bolsafeucn_back.src.Application.Services.Interfaces;
@@ -247,6 +248,42 @@ namespace bolsafeucn_back.src.Application.Services.Implements
         {
             var reviews = await _repository.GetAllAsync();
             return reviews.Select(ReviewMapper.ToDTO);
+        }
+
+        public async Task<IEnumerable<PublicationsDTO>> GetPublicationInformationAsync(int userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if(user == null)
+                throw new KeyNotFoundException($"No se encontró el usuario con ID {userId}.");
+            IEnumerable<Review> reviews;
+            if(user.UserType == UserType.Estudiante)
+            {
+                reviews = await _repository.GetByStudentIdAsync(userId);
+                if(reviews == null || !reviews.Any())
+                    throw new KeyNotFoundException($"No se encontraron reseñas para el estudiante con ID {userId}.");
+            }
+            else if(user.UserType == UserType.Empresa || user.UserType == UserType.Particular)
+            {
+                reviews = await _repository.GetByOfferorIdAsync(userId);
+                if(reviews == null || !reviews.Any())
+                    throw new KeyNotFoundException($"No se encontraron reseñas para el oferente con ID {userId}.");
+            }
+            else
+            {
+                throw new InvalidOperationException($"El tipo de usuario {user.UserType} no puede tener reseñas.");
+            }
+            var publicationsList = new List<Publication>();
+            foreach(var review in reviews)
+            {
+                var publications = await _repository.GetPublicationInformationAsync(review.Id);
+                if(publications != null)
+                {
+                    publicationsList.AddRange(publications);
+                }
+            }
+            if(!publicationsList.Any())
+                throw new KeyNotFoundException($"No se encontró información de publicación para el usuario con ID {userId}.");
+            return publicationsList.Select(PublicationMapper.ToDTO);
         }
     }
 }

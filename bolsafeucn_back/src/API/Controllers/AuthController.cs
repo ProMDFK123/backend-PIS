@@ -10,12 +10,10 @@ namespace bolsafeucn_back.src.API.Controllers
     public class AuthController : BaseController
     {
         private readonly IUserService _service;
-        private readonly ILogger<AuthController> _logger;
 
         public AuthController(IUserService userService, ILogger<AuthController> logger)
         {
             _service = userService;
-            _logger = logger;
         }
 
         [HttpPost("register/student")]

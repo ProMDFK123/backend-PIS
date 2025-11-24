@@ -1,5 +1,7 @@
 using bolsafeucn_back.src.Application.DTOs.AuthDTOs;
 using bolsafeucn_back.src.Application.DTOs.AuthDTOs.ResetPasswordDTOs;
+using bolsafeucn_back.src.Application.DTOs.UserDTOs;
+using bolsafeucn_back.src.Application.DTOs.UserDTOs.UserProfileDTOs;
 using bolsafeucn_back.src.Domain.Models;
 
 namespace bolsafeucn_back.src.Application.Services.Interfaces
@@ -12,6 +14,7 @@ namespace bolsafeucn_back.src.Application.Services.Interfaces
         Task<GeneralUser> CrearUsuarioAsync(UsuarioDto dto);
         Task<bool> EliminarUsuarioAsync(int id);
         */
+        #region Registro de usuarios
         Task<string> RegisterStudentAsync(
             RegisterStudentDTO registerStudentDTO,
             HttpContext httpContext
@@ -29,6 +32,8 @@ namespace bolsafeucn_back.src.Application.Services.Interfaces
         Task<string> ResendVerificationEmailAsync(
             ResendVerificationDTO resendVerificationDTO,
             HttpContext httpContext
+        #endregion
+        #region Login and Password Management
         );
         Task<string> LoginAsync(LoginDTO loginDTO, HttpContext httpContext);
         Task<string> SendResetPasswordVerificationCodeEmailAsync(
@@ -39,5 +44,11 @@ namespace bolsafeucn_back.src.Application.Services.Interfaces
             VerifyResetPasswordCodeDTO verifyResetPasswordCodeDTO,
             HttpContext httpContext
         );
+        Task<string> ChangeUserPasswordById(ChangeUserPasswordDTO changeUserPasswordDTO, int userId);
+        #endregion
+        #region Profile Management
+        Task<IGetUserProfileDTO> GetUserProfileByIdAsync(int userId, UserType userType);
+        Task<string> UpdateUserProfileByIdAsync(IUpdateParamsDTO updateParamsDTO, int userId, UserType userType);
+        #endregion 
     }
 }

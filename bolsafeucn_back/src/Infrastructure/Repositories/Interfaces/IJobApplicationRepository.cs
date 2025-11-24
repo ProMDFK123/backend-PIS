@@ -10,5 +10,6 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Interfaces
         Task<IEnumerable<JobApplication>> GetByStudentIdAsync(int studentId);
         Task<IEnumerable<JobApplication>> GetByOfferIdAsync(int offerId);
         Task<bool> UpdateAsync(JobApplication application);
+
     }
 }

@@ -50,7 +50,9 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
 
         public async Task<IEnumerable<BuySell>> GetAllPendingBuySellsAsync()
         {
-            _logger.LogInformation("Consultando publicaciones de compra/venta pendientes en la base de datos");
+            _logger.LogInformation(
+                "Consultando publicaciones de compra/venta pendientes en la base de datos"
+            );
             var buysell = await _context
                 .BuySells.Include(bs => bs.User)
                 .ThenInclude(u => u.Company)
@@ -62,13 +64,17 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
                 .AsNoTracking()
                 .ToListAsync();
             _logger.LogInformation(
-                "Consulta completada: {Count} publicaciones de compra/venta pendientes encontradas", buysell.Count);
+                "Consulta completada: {Count} publicaciones de compra/venta pendientes encontradas",
+                buysell.Count
+            );
             return buysell;
         }
 
         public async Task<IEnumerable<BuySell>> GetPublishedBuySellsAsync()
         {
-            _logger.LogInformation("Consultando publicaciones de compra/venta publicadas en la base de datos");
+            _logger.LogInformation(
+                "Consultando publicaciones de compra/venta publicadas en la base de datos"
+            );
             var buysell = await _context
                 .BuySells.Include(bs => bs.User)
                 .ThenInclude(u => u.Company)
@@ -77,8 +83,12 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
                 .Include(bs => bs.Images)
                 .Where(bs => bs.statusValidation == StatusValidation.Published)
                 .OrderByDescending(bs => bs.PublicationDate)
-                .AsNoTracking().ToListAsync();
-            _logger.LogInformation("Consulta completada: {Count} publicaciones de compra/venta publicadas encontradas", buysell.Count);
+                .AsNoTracking()
+                .ToListAsync();
+            _logger.LogInformation(
+                "Consulta completada: {Count} publicaciones de compra/venta publicadas encontradas",
+                buysell.Count
+            );
             return buysell;
         }
 

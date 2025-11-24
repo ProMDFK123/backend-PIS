@@ -131,11 +131,17 @@ public class OfferService : IOfferService
     public async Task<IEnumerable<PendingOffersForAdminDto>> GetPendingOffersAsync()
     {
         var offer = await _offerRepository.GetAllPendingOffersAsync();
-        return offer.Select(o => new PendingOffersForAdminDto
-        {
-            Title = o.Title,
-            Type = o.Type
-        }).ToList();
+        return offer
+            .Select(o => new PendingOffersForAdminDto
+            {
+                Id = o.Id,
+                Title = o.Title,
+                Description = o.Description,
+                Location = o.Location,
+                PostDate = o.PublicationDate,
+                Remuneration = o.Remuneration,
+            })
+            .ToList();
     }
 
     public async Task<IEnumerable<OfferBasicAdminDto>> GetPublishedOffersAsync()
@@ -152,11 +158,13 @@ public class OfferService : IOfferService
                     : (o.User?.UserName ?? "UCN");
                 return new OfferBasicAdminDto
                 {
+                    Id = o.Id,
                     Title = o.Title,
                     CompanyName = ownerName,
                     PublicationDate = o.PublicationDate,
                     OfferType = o.OfferType,
-                    Activa = o.IsActive
+                    Activa = o.IsActive,
+                    Remuneration = o.Remuneration,
                 };
             })
             .ToList();
@@ -186,9 +194,12 @@ public class OfferService : IOfferService
             Images = imageForDTO,
             CompanyName = ownerName,
             PublicationDate = offer.PublicationDate,
+            EndDate = offer.EndDate,
+            DeadlineDate = offer.DeadlineDate,
             Type = offer.Type,
             Active = offer.IsActive,
-            statusValidation = offer.statusValidation
+            statusValidation = offer.statusValidation,
+            Remuneration = offer.Remuneration,
         };
         _logger.LogInformation("Detalles de oferta ID: {OfferId} obtenidos exitosamente", offerId);
         return result;
@@ -232,7 +243,11 @@ public class OfferService : IOfferService
             Description = offer.Description,
             CompanyName = ownerName,
             CorreoContacto = offer.ContactInfo,
-            TelefonoContacto = offer.User?.PhoneNumber
+            TelefonoContacto = offer.User?.PhoneNumber,
+            PublicationDate = offer.PublicationDate,
+            DeadlineDate = offer.DeadlineDate,
+            EndDate = offer.EndDate,
+            Remuneration = offer.Remuneration,
         };
     }
 
@@ -245,7 +260,9 @@ public class OfferService : IOfferService
         }
         if (offer.statusValidation != StatusValidation.InProcess)
         {
-            throw new InvalidOperationException($"La oferta con ID {id} ya fue {offer.statusValidation}. No se puede publicar.");
+            throw new InvalidOperationException(
+                $"La oferta con ID {id} ya fue {offer.statusValidation}. No se puede publicar."
+            );
         }
         offer.IsActive = true;
         offer.statusValidation = StatusValidation.Published;
@@ -261,10 +278,53 @@ public class OfferService : IOfferService
         }
         if (offer.statusValidation != StatusValidation.InProcess)
         {
-            throw new InvalidOperationException($"La oferta con ID {id} ya fue {offer.statusValidation}. No se puede publicar.");
+            throw new InvalidOperationException(
+                $"La oferta con ID {id} ya fue {offer.statusValidation}. No se puede rechazar."
+            );
         }
         offer.IsActive = false;
         offer.statusValidation = StatusValidation.Rejected;
+        await _offerRepository.UpdateOfferAsync(offer);
+    }
+
+    public async Task<OfferDetailDto> GetOfferDetailForOfferer(int id, string userId)
+    {
+        var offer = await _offerRepository.GetByIdAsync(id);
+
+        if (offer == null)
+        {
+            throw new KeyNotFoundException($"La oferta con id {id} no fue encontrada.");
+        }
+
+        if (!int.TryParse(userId, out int parsedUserId))
+        {
+            throw new UnauthorizedAccessException("El ID de usuario es inválido.");
+        }
+
+        if (offer.UserId != parsedUserId)
+        {
+            // Lanza 404 para no revelar que la oferta existe pero no es suya
+            throw new KeyNotFoundException($"La oferta con id {id} no fue encontrada.");
+
+            // throw new UnauthorizedAccessException("No tienes permiso para ver esta oferta.");
+        }
+        var offerDetailDto = offer.Adapt<OfferDetailDto>();
+
+        return offerDetailDto;
+    }
+
+    public async Task ClosePublishedOfferAsync(int offerId)
+    {
+        var offer = await _offerRepository.GetByIdAsync(offerId);
+        if (offer == null)
+        {
+            throw new KeyNotFoundException($"La oferta con id {offerId} no fue encontrada.");
+        }
+        if (!offer.IsActive)
+        {
+            throw new InvalidOperationException($"La oferta con id {offerId} ya ha sido cerrada.");
+        }
+        offer.IsActive = false;
         await _offerRepository.UpdateOfferAsync(offer);
     }
 }

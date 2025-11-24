@@ -44,17 +44,27 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             GeneralUser currentUser
         )
         {
-            if (currentUser.UserType != UserType.Empresa && currentUser.UserType != UserType.Particular && currentUser.UserType != UserType.Administrador)
+            if (
+                currentUser.UserType != UserType.Empresa
+                && currentUser.UserType != UserType.Particular
+                && currentUser.UserType != UserType.Administrador
+            )
             {
-                throw new UnauthorizedAccessException("Solo usuarios tipo Empresa o Particular pueden crear ofertas.");
+                throw new UnauthorizedAccessException(
+                    "Solo usuarios tipo Empresa o Particular pueden crear ofertas."
+                );
             }
             if (offerDTO.EndDate <= DateTime.UtcNow)
             {
-                throw new InvalidOperationException("La fecha de finalización (EndDate) debe ser en el futuro.");
+                throw new InvalidOperationException(
+                    "La fecha de finalización (EndDate) debe ser en el futuro."
+                );
             }
             if (offerDTO.DeadlineDate >= offerDTO.EndDate)
             {
-                throw new InvalidOperationException("La fecha límite de postulación (DeadlineDate) debe ser anterior a la fecha de finalización de la oferta.");
+                throw new InvalidOperationException(
+                    "La fecha límite de postulación (DeadlineDate) debe ser anterior a la fecha de finalización de la oferta."
+                );
             }
             try
             {
@@ -63,8 +73,8 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                     Title = offerDTO.Title,
                     Description = offerDTO.Description,
                     PublicationDate = DateTime.UtcNow,
-                    EndDate = offerDTO.EndDate,
-                    DeadlineDate = offerDTO.DeadlineDate,
+                    EndDate = offerDTO.EndDate.ToUniversalTime(),
+                    DeadlineDate = offerDTO.DeadlineDate.ToUniversalTime(),
                     Remuneration = (int)offerDTO.Remuneration,
                     OfferType = offerDTO.OfferType,
                     Location = offerDTO.Location,
@@ -75,7 +85,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                     User = currentUser,
                     Type = Types.Offer,
                     statusValidation = StatusValidation.InProcess,
-                    IsActive = false
+                    IsActive = false,
                 };
 
                 var createdOffer = await _offerRepository.CreateOfferAsync(offer);
@@ -111,9 +121,15 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             GeneralUser currentUser
         )
         {
-            if (currentUser.UserType != UserType.Empresa && currentUser.UserType != UserType.Particular && currentUser.UserType != UserType.Administrador)
+            if (
+                currentUser.UserType != UserType.Empresa
+                && currentUser.UserType != UserType.Particular
+                && currentUser.UserType != UserType.Administrador
+            )
             {
-                throw new UnauthorizedAccessException("Solo usuarios tipo Empresa o Particular pueden crear publicaciones de compra/venta.");
+                throw new UnauthorizedAccessException(
+                    "Solo usuarios tipo Empresa o Particular pueden crear publicaciones de compra/venta."
+                );
             }
             try
             {
@@ -171,11 +187,18 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             );
 
             // 2. Mapea las entidades a DTOs
-            var publicationsDto = _mapper.Adapt<IEnumerable<PublicationsDTO>>(
-                (TypeAdapterConfig)publications
-            );
+            var publicationsDto = publications.Select(p => new PublicationsDTO
+            {
+                IdPublication = p.Id,
+                Title = p.Title,
+                PublicationDate = p.PublicationDate,
+                statusValidation = p.statusValidation,
+                UserId = p.UserId,
+                Images = p.Images,
+                types = p.Type,
+                IsActive = p.IsActive,
+            });
 
-            // 3. Devuelve el DTO
             return publicationsDto;
         }
 
@@ -188,7 +211,19 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                 userId
             );
             // 2. Mapea y devuelve el DTO
-            return _mapper.Adapt<IEnumerable<PublicationsDTO>>((TypeAdapterConfig)publications);
+            var publicationsDto = publications.Select(p => new PublicationsDTO
+            {
+                IdPublication = p.Id,
+                Title = p.Title,
+                PublicationDate = p.PublicationDate,
+                statusValidation = p.statusValidation,
+                UserId = p.UserId,
+                Images = p.Images,
+                types = p.Type,
+                IsActive = p.IsActive,
+            });
+
+            return publicationsDto;
         }
 
         // --- IMPLEMENTACIÓN PENDING ("InProcess") ---

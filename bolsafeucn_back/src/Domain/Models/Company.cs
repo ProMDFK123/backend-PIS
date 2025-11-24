@@ -10,6 +10,7 @@ namespace bolsafeucn_back.src.Domain.Models
         public required int GeneralUserId { get; set; }
         public required string CompanyName { get; set; }
         public required string LegalName { get; set; }
-        public float Rating { get; set; }
+        public float Rating { get; set; } = 6.0f;
+        //public ICollection<Review>? ReviewHistory { get; set; }
     }
 }

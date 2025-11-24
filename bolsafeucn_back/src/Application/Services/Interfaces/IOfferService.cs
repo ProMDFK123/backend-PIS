@@ -79,4 +79,6 @@ public interface IOfferService
     /// </summary>
     /// <param name="id">Offer identifier to reject.</param>
     Task GetOfferForAdminToReject(int id);
+    Task<OfferDetailDto> GetOfferDetailForOfferer(int id, string userId);
+    Task ClosePublishedOfferAsync(int offerId);
 }

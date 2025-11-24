@@ -23,7 +23,7 @@ public class PublicationRepository : IPublicationRepository
         return await _context
             .Publications.Where(p =>
                 p.UserId == int.Parse(userId) && p.statusValidation == StatusValidation.Published
-            ) // <-- Filtro Rejected
+            ) // <-- Filtro Published
             .AsNoTracking()
             .ToListAsync();
     }

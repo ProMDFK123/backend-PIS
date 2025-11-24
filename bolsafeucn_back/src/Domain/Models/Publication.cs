@@ -17,6 +17,7 @@ namespace bolsafeucn_back.src.Domain.Models
         Published, // Validated and published by an administrator
         InProcess, // Under administrative review
         Rejected, // Rejected by an administrator
+        Closed, // Closed by the user or administrator
     }
 
     /// <summary>

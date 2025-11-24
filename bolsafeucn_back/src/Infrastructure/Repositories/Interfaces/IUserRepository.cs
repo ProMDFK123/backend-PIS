@@ -13,6 +13,7 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Interfaces
         Task<bool> CreateCompanyAsync(Company company);
         Task<bool> CreateAdminAsync(Admin admin, bool superAdmin);
         Task<bool> CheckPasswordAsync(GeneralUser user, string password);
+        Task<bool> UpdateAsync(GeneralUser user);
         Task<bool> UpdatePasswordAsync(GeneralUser user, string newPassword);
         Task<string> GetRoleAsync(GeneralUser user);
         Task<GeneralUser> GetGeneralUserByIdAsync(int id);
@@ -20,6 +21,8 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Interfaces
         Task<bool> ConfirmEmailAsync(string email);
         Task<GeneralUser?> GetByIdAsync(int id);
         Task<GeneralUser?> GetByIdWithRelationsAsync(int id);
+        Task<GeneralUser?> GetUntrackedWithTypeAsync(int id, UserType userType);
+        Task<GeneralUser?> GetTrackedWithTypeAsync(int id, UserType userType);  
         Task<GeneralUser> AddAsync(GeneralUser usuario);
         Task<bool> DeleteAsync(int id);
     }

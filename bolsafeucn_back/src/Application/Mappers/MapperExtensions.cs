@@ -18,6 +18,8 @@ namespace bolsafeucn_back.src.Application.Mappers
             offerMapper?.ConfigureAllMappings();
             var buySellMapper = serviceProvider.GetService<BuySellMapper>();
             buySellMapper?.ConfigureAllMappings();
+            var profileMapper = serviceProvider.GetService<ProfileMapper>();
+            profileMapper?.ConfigureAllMappings();
 
             TypeAdapterConfig.GlobalSettings.Default.IgnoreNullValues(true);
         }

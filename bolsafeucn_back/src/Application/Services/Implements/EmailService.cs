@@ -152,5 +152,84 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                 throw new Exception("Error al cargar el template.", ex);
             }
         }
+        /// <summary>
+        /// Envía un correo de notificación cuando la postulación cambia de estado.
+        /// </summary>
+        public async Task<bool> SendPostulationStatusChangeEmailAsync(
+            string email,
+            string offerName,
+            string companyName,
+            string newStatus
+        )
+        {
+            try
+            {
+                Log.Information("Enviando email de cambio de estado a {Email}", email);
+
+                // Cargar template HTML
+                var htmlBody = await LoadPostulationStatusTemplateAsync(
+                    offerName,
+                    companyName,
+                    newStatus
+                );
+
+                var message = new EmailMessage
+                {
+                    To = email,
+                    From = _configuration.GetValue<string>("EmailConfiguration:From")!,
+                    Subject = "Actualización en tu postulación",
+                    HtmlBody = htmlBody
+                };
+
+                var result = await _resend.EmailSendAsync(message);
+
+                if (!result.Success)
+                {
+                    Log.Error("Error al enviar correo de cambio de estado a {Email}", email);
+                    return false;
+                }
+
+                Log.Information("Correo de cambio de estado enviado exitosamente a {Email}", email);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error en envío de cambio de estado a {Email}", email);
+                return false;
+            }
+        }
+        private async Task<string> LoadPostulationStatusTemplateAsync(
+            string offerName,
+            string companyName,
+            string newStatus
+        )
+        {
+            try
+            {
+                var templatePath = Path.Combine(
+                    _environment.ContentRootPath,
+                    "src",
+                    "Application",
+                    "Templates",
+                    "Emails",
+                    "PostulationStatusChanged.html"
+                );
+
+                Log.Debug("Cargando template de cambio de estado desde {Path}", templatePath);
+
+                var html = await File.ReadAllTextAsync(templatePath);
+
+                html = html.Replace("{{OFFER_NAME}}", offerName);
+                html = html.Replace("{{COMPANY_NAME}}", companyName);
+                html = html.Replace("{{NEW_STATUS}}", newStatus);
+
+                return html;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error cargando template PostulationStatusChanged");
+                throw;
+            }
+        }
     }
 }

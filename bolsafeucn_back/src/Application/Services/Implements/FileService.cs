@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using bolsafeucn_back.src.Application.Services.Interfaces;
 using bolsafeucn_back.src.Domain.Models;
-using bolsafeucn_back.src.Infrastructure.Data;
 using bolsafeucn_back.src.Infrastructure.Repositories.Interfaces;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
@@ -20,6 +15,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
         private readonly string[] _allowedExtensions;
         private readonly int _maxFileSizeInBytes;
         private readonly IFileRepository _fileRepository;
+        private readonly IUserRepository _userRepository;
         private readonly string _cloudName;
         private readonly string _cloudApiKey;
         private readonly string _cloudApiSecret;
@@ -28,10 +24,11 @@ namespace bolsafeucn_back.src.Application.Services.Implements
         private readonly string _transformationQuality;
         private readonly string _transformationFetchFormat;
 
-        public FileService(IConfiguration configuration, IFileRepository fileRepository)
+        public FileService(IConfiguration configuration, IFileRepository fileRepository, IUserRepository userRepository)
         {
             _configuration = configuration;
             _fileRepository = fileRepository;
+            _userRepository = userRepository;
             _cloudName =
                 _configuration["Cloudinary:CloudName"]
                 ?? throw new InvalidOperationException(
@@ -49,28 +46,28 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             _cloudinary = new Cloudinary(account);
             _cloudinary.Api.Secure = true; // Aseguramos  que las URLs sean seguras con HTTPS
             _allowedExtensions =
-                _configuration.GetSection("Products:ImageAllowedExtensions").Get<string[]>()
+                _configuration.GetSection("Images:ImageAllowedExtensions").Get<string[]>()
                 ?? throw new InvalidOperationException(
                     "La configuración de las extensiones de las imágenes es obligatoria"
                 );
             _transformationQuality =
-                _configuration["Products:TransformationQuality"]
+                _configuration["Images:TransformationQuality"]
                 ?? throw new InvalidOperationException(
                     "La configuración de la calidad de la transformación es obligatoria"
                 );
             _transformationCrop =
-                _configuration["Products:TransformationCrop"]
+                _configuration["Images:TransformationCrop"]
                 ?? throw new InvalidOperationException(
                     "La configuración del recorte de la transformación es obligatoria"
                 );
             _transformationFetchFormat =
-                _configuration["Products:TransformationFetchFormat"]
+                _configuration["Images:TransformationFetchFormat"]
                 ?? throw new InvalidOperationException(
                     "La configuración del formato de la transformación es obligatoria"
                 );
             if (
                 !int.TryParse(
-                    _configuration["Products:ImageMaxSizeInBytes"],
+                    _configuration["Images:ImageMaxSizeInBytes"],
                     out _maxFileSizeInBytes
                 )
             )
@@ -81,7 +78,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             }
             if (
                 !int.TryParse(
-                    _configuration["Products:TransformationWidth"],
+                    _configuration["Images:TransformationWidth"],
                     out _transformationWidth
                 )
             )
@@ -196,6 +193,124 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             }
 
             Log.Information($"Imagen subida exitosamente: {uploadResult.SecureUrl}");
+            return true;
+        }
+
+        public async Task<bool> UploadUserImageAsync(IFormFile file, GeneralUser user, UserImageType imageType)
+        {
+
+            if (user.Id <= 0)
+            {
+                Log.Error($"Usuario inválido: {user.Id}");
+                throw new ArgumentException("UserId debe ser mayor a 0");
+            }
+
+            if (file == null || file.Length == 0)
+            {
+                Log.Error("Intento de subir un archivo nulo o vacío");
+                throw new ArgumentException("Archivo inválido");
+            }
+
+            if (file.Length > _maxFileSizeInBytes)
+            {
+                Log.Error(
+                    $"El archivo {file.FileName} excede el tamaño máximo permitido de {_maxFileSizeInBytes / 1024 / 1024} MB"
+                );
+                throw new ArgumentException(
+                    $"El archivo excede el tamaño máximo permitido de {_maxFileSizeInBytes / 1024 / 1024} MB"
+                );
+            }
+
+            var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+            if (!_allowedExtensions.Contains(fileExtension))
+            {
+                Log.Error($"Extensión de archivo no permitida: {fileExtension}");
+                throw new ArgumentException(
+                    $"Extensión de archivo no permitida. Permitir: {string.Join(", ", _allowedExtensions)}"
+                );
+            }
+
+            if (!IsValidImageFile(file))
+            {
+                Log.Error($"El archivo {file.FileName} no es una imagen válida");
+                throw new ArgumentException("El archivo no es una imagen válida");
+            }
+            var folder = $"user/{user.Id}/images";
+            using var stream = file.OpenReadStream();
+
+            var uploadParams = new ImageUploadParams()
+            {
+                Folder = folder,
+                File = new FileDescription(file.FileName, stream),
+                UseFilename = true,
+                UniqueFilename = true,
+            };
+
+            Log.Information($"Optimizando imagen: {file.FileName} antes de subir a la nube");
+            uploadParams.Transformation = new Transformation()
+                .Width(_transformationWidth)
+                .Crop(_transformationCrop)
+                .Chain()
+                .Quality(_transformationQuality)
+                .Chain()
+                .FetchFormat(_transformationFetchFormat);
+
+            Log.Information($"Subiendo imagen: {file.FileName} a Cloudinary");
+            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+            if (uploadResult.Error != null)
+            {
+                Log.Error($"Hubo un error al subir la imagen: {uploadResult.Error.Message}");
+                throw new Exception($"Error al subir la imagen: {uploadResult.Error.Message}");
+            }
+
+            var image = new UserImage()
+            {
+                PublicId = uploadResult.PublicId,
+                Url = uploadResult.SecureUrl.ToString(),
+                ImageType = imageType
+            };
+
+            var result = await _fileRepository.CreateUserImageAsync(image);
+            if (result is bool && !result.Value!)
+            {
+                Log.Error($"Error al guardar la imagen en la base de datos: {file.FileName}");
+                var deleteResult = await DeleteInCloudinaryAsync(uploadResult.PublicId); // Eliminamos la imagen de Cloudinary si falla la creación de la imagen en la bdd
+                if (!deleteResult)
+                {
+                    Log.Error(
+                        $"Error al eliminar la imagen de Cloudinary después de fallar la creación en la base de datos: {uploadResult.PublicId}"
+                    );
+                    throw new Exception(
+                        "Error al eliminar la imagen de Cloudinary después de fallar la creación en la base de datos"
+                    );
+                }
+                throw new Exception("Error al guardar la imagen en la base de datos");
+            }
+            else if (result is null)
+            {
+                Log.Warning($"La imagen ya existe en la base de datos: {file.FileName}");
+                return false;
+            }
+
+            Log.Information($"Imagen subida exitosamente: {uploadResult.SecureUrl}");
+
+            switch (imageType)
+            {
+                case UserImageType.Perfil:
+                    user.ProfilePhoto = image;
+                    user.ProfilePhotoId = image.Id;
+                    break;
+                case UserImageType.Banner:
+                    user.ProfileBanner = image;
+                    user.ProfileBannerId = image.Id;
+                    break;
+                default:
+                    Log.Error($"Tipo de imagen de usuario no soportado: {imageType}");
+                    throw new ArgumentException("Tipo de imagen de usuario no soportado");
+            }
+
             return true;
         }
 

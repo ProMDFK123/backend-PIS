@@ -51,5 +51,9 @@ namespace bolsafeucn_back.src.Application.DTOs.OfferDTOs
         /// Administrative validation status for the offer.
         /// </summary>
         public StatusValidation statusValidation { get; set; }
+        public DateTime EndDate { get; set; }
+        public DateTime DeadlineDate { get; set; }
+        public int Remuneration { get; set; }
+        
     }
 }

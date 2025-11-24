@@ -134,6 +134,19 @@ namespace bolsafeucn_back.src.API.Controllers
                     new GenericResponse<object>("Error al obtener las postulaciones")
                 );
             }
+
+        
+        }
+
+        [HttpGet("{applicationId}/details")]
+        [Authorize]
+        public async Task<ActionResult<JobApplicationDetailDto>> GetApplicationDetails(int applicationId)
+        {
+            var application = await _jobApplicationService.GetApplicationDetailAsync(applicationId);
+            if (application == null)
+                return NotFound("Postulación no encontrada");
+            
+            return Ok(application);
         }
 
         #endregion

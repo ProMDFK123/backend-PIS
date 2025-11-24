@@ -24,7 +24,8 @@ namespace bolsafeucn_back.src.Domain.Models
         public required string Name { get; set; }
         public required string LastName { get; set; }
         public required Disability Disability { get; set; }
-        public float Rating { get; set; }
+        public float Rating { get; set; } = 6.0f;
+        //public ICollection<Review>? ReviewHistory { get; set; }
         public string CurriculumVitae { get; set; } = string.Empty;
         public string MotivationLetter { get; set; } = string.Empty;
     }

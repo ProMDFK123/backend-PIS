@@ -4,11 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using bolsafeucn_back.src.Domain.Models;
 using bolsafeucn_back.src.Infrastructure.Data;
+using bolsafeucn_back.src.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
 {
-    public class FileRepository
+    public class FileRepository : IFileRepository
     {
         private readonly AppDbContext _context;
 
@@ -28,6 +29,22 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
             if (!existsImage)
             {
                 _context.Images.Add(file);
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Crea un archivo de imagen de usuario en la base de datos.
+        /// </summary>
+        /// <param name="file">El archivo de imagen a crear.</param>
+        /// <returns>True si el archivo se creó correctamente, de lo contrario false y null en caso de que la imagen ya existe.</returns>
+        public async Task<bool?> CreateUserImageAsync(UserImage file)
+        {
+            var existsImage = await _context.UserImages.AnyAsync(i => i.PublicId == file.PublicId);
+            if (!existsImage)
+            {
+                _context.UserImages.Add(file);
                 return await _context.SaveChangesAsync() > 0;
             }
             return null;

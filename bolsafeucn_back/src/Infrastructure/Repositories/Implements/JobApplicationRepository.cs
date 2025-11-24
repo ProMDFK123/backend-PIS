@@ -66,5 +66,6 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
             var result = await _context.SaveChangesAsync();
             return result > 0;
         }
+
     }
 }

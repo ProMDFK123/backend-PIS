@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16
+    container_name: bolsafeucn-container
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: bolsafeucn-db
+      POSTGRES_USER: bolsafeucn-user
+      POSTGRES_PASSWORD: bolsafeucn-password
+    volumes:
+      # Usamos un nombre de volumen dedicado para el proyecto
+      - bolsafeucn_project_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  bolsafeucn_project_data:

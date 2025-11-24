@@ -7,6 +7,8 @@ namespace bolsafeucn_back.src.Application.DTOs.OfferDTOs
     /// </summary>
     public class OfferBasicAdminDto
     {
+        public int Id { get; set; }
+        
         /// <summary>
         /// Offer title.
         /// </summary>
@@ -31,5 +33,7 @@ namespace bolsafeucn_back.src.Application.DTOs.OfferDTOs
         /// Whether the offer is active.
         /// </summary>
         public bool Activa { get; set; }
+
+        public int Remuneration { get; set; }
     }
 }

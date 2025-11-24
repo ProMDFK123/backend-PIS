@@ -208,9 +208,35 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
             return await _userManager.CheckPasswordAsync(user, password);
         }
 
+        /// <summary>
+        /// Actualiza la información de un usuario.
+        /// </summary>
+        /// <param name="user">Usuario a actualizar</param>
+        /// <returns>True si la actualización fue exitosa, de lo contrario false.</returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public async Task<bool> UpdateAsync(GeneralUser user)
+        {
+            Log.Information($"Actualizando informacion para el usuario Id: {user.Id}");
+            var userResult = await _userManager.UpdateAsync(user);
+            if (!userResult.Succeeded)
+            {
+                var errors = string.Join(" | ", userResult.Errors.Select(e => $"{e.Code}: {e.Description}"));
+                Log.Error("Error al actualizar usuario Id: {UserId}. Identity errors: {Errors}", user.Id, errors);
+                throw new InvalidOperationException($"Error al actualizar los datos del usuario: {errors}");
+            }
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// Actualiza la contraseña de un usuario.
+        /// </summary>
+        /// <param name="user">Usuario al que se le actualizará la contraseña</param>
+        /// <param name="newPassword">Nueva contraseña</param>
+        /// <returns>True si la contraseña se actualizó correctamente, de lo contrario false.</returns>
         public async Task<bool> UpdatePasswordAsync(GeneralUser user, string newPassword)
         {
-            Log.Information("Actualizando contraseña para usuario ID: {UserId}", user.Id);
+            Log.Information($"Actualizando contraseña para usuario ID: {user.Id}");
             var removePasswordResult = await _userManager.RemovePasswordAsync(user);
             if (!removePasswordResult.Succeeded)
             {
@@ -272,13 +298,60 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
             return await _context.Users.FindAsync(id);
         }
 
-        public async Task<GeneralUser?> GetByIdWithRelationsAsync(int id)
+        public async Task<GeneralUser?> GetByIdWithRelationsAsync(int userId)
         {
             return await _context
                 .Users.Include(u => u.Student)
                 .Include(u => u.Company)
                 .Include(u => u.Individual)
-                .FirstOrDefaultAsync(u => u.Id == id);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId);
+        }
+
+        /// <summary>
+        /// Obtiene un usuario por su ID y tipo de usuario.
+        /// </summary>
+        /// <param name="userId">ID del usuario</param>
+        /// <param name="userType">Tipo de usuario</param>
+        /// <returns>Usuario general con las relaciones correspondientes</returns>
+        public async Task<GeneralUser?> GetUntrackedWithTypeAsync(int userId, UserType userType)
+        {
+            var query = _context.Users.AsNoTracking().AsQueryable();
+            switch (userType)
+            {
+                case UserType.Estudiante: query = query.Include(u => u.Student); break;
+                case UserType.Particular: query = query.Include(u => u.Individual); break;
+                case UserType.Empresa: query = query.Include(u => u.Company); break;
+                case UserType.Administrador: query = query.Include(u => u.Admin); break;
+                default: return null;
+            };
+            return await query
+                            .Include(u => u.ProfilePhoto)
+                            .Include(u => u.ProfileBanner)
+                            .FirstOrDefaultAsync(u => u.Id == userId);
+        }
+
+        /// <summary>
+        /// Obtiene un usuario por su ID y tipo de usuario para actualización.
+        /// </summary>
+        /// <param name="userId">ID del usuario</param>
+        /// <param name="userType">Tipo de usuario</param>
+        /// <returns>Usuario general con las relaciones correspondientes</returns>
+        public async Task<GeneralUser?> GetTrackedWithTypeAsync(int userId, UserType userType)
+        {
+            var query = _context.Users.AsQueryable();
+            switch (userType)
+            {
+                case UserType.Estudiante: query = query.Include(u => u.Student); break;
+                case UserType.Particular: query = query.Include(u => u.Individual); break;
+                case UserType.Empresa: query = query.Include(u => u.Company); break;
+                case UserType.Administrador: query = query.Include(u => u.Admin); break;
+                default: return null;
+            };
+            return await query
+                            .Include(u => u.ProfilePhoto)
+                            .Include(u => u.ProfileBanner)
+                            .FirstOrDefaultAsync(u => u.Id == userId);
         }
 
         public async Task<GeneralUser> AddAsync(GeneralUser user)

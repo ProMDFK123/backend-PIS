@@ -71,6 +71,7 @@ namespace bolsafeucn_back.src.Domain.Models
         /// Indica si las evaluaciones hacia el estudiante han sido completadas.
         /// </summary>
         public bool StudentReviewCompleted { get; set; } = false;
+        //todo: valor calculado 
         
         /// <summary>
         /// Indica si las evaluaciones hacia el oferente han sido completadas.
