@@ -127,7 +127,7 @@ try
     #endregion
     #region CORS
     // =========================
-    // 3) CORS (permitimos el front en 3000)
+    // 3) CORS (permitimos el front en desarrollo y producción)
     // =========================
     Console.WriteLine("[STARTUP] Configurando CORS...");
     builder.Services.AddCors(options =>
@@ -136,12 +136,24 @@ try
             "Frontend",
             policy =>
             {
+                // Obtener orígenes permitidos de la configuración
+                var allowedOrigins = new List<string> { "http://localhost:3000" }; // Default local
+
+                // Agregar orígenes desde variables de entorno/appsettings
+                var allowedOriginsConfig = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
+                if (allowedOriginsConfig != null && allowedOriginsConfig.Length > 0)
+                {
+                    allowedOrigins.Clear(); // Reemplazar default con configuración
+                    allowedOrigins.AddRange(allowedOriginsConfig);
+                    Console.WriteLine($"[STARTUP] Orígenes CORS cargados desde configuración: {string.Join(", ", allowedOrigins)}");
+                }
+                else
+                {
+                    Console.WriteLine($"[STARTUP] Usando orígenes CORS por defecto (local): {string.Join(", ", allowedOrigins)}");
+                }
+
                 policy
-                    .WithOrigins(
-                        "http://localhost:3000" // Next.js dev
-                                                // ,"https://localhost:3000"  // agrega si usas https en front
-                                                // ,"https://localhost:7129"  // agrega si llamas al backend en https y navegas desde https
-                    )
+                    .WithOrigins(allowedOrigins.ToArray())
                     .WithHeaders(HeaderNames.ContentType, HeaderNames.Authorization, "Accept")
                     .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                     .AllowCredentials(); // opcional si luego usas cookies
