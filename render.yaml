@@ -10,12 +10,17 @@ services:
     autoDeploy: true
     envVars:
       # PostgreSQL Connection
-      # IMPORTANTE: Cuando crees tu base de datos en Render, obtendrás una URL tipo:
-      # postgres://user:password@host.oregon-postgres.render.com/database
-      # Debes convertirla al formato: Host=host;Port=5432;Database=database;Username=user;Password=password;SSL Mode=Require;Trust Server Certificate=true
+      # Render proporciona DATABASE_URL automáticamente al vincular la base de datos
+      # El código convierte automáticamente al formato de connection string de ASP.NET
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bolsafeucndb
+          property: connectionString
+      
+      # Conexión alternativa en formato ASP.NET (opcional, DATABASE_URL tiene prioridad)
       - key: ConnectionStrings__DefaultConnection
         sync: false
-        # NOTA: Agregar manualmente desde el dashboard de Render en el formato correcto
+        # NOTA: Solo necesario si no usas DATABASE_URL
 
       # JWT Configuration
       - key: Jwt__Key
