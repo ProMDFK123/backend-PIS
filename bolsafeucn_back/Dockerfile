@@ -24,8 +24,10 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 
-# Expone el puerto 8080
+# Crear script de inicio que use la variable PORT de Render
+RUN echo '#!/bin/sh\nexport ASPNETCORE_URLS="http://+:${PORT:-8080}"\nexec dotnet bolsafeucn_back.dll "$@"' > /app/start.sh && chmod +x /app/start.sh
+
 EXPOSE 8080
 
-# Comando para iniciar tu app
-ENTRYPOINT ["dotnet", "bolsafeucn_back.dll"]
+# Usar script de inicio
+ENTRYPOINT ["/app/start.sh"]
