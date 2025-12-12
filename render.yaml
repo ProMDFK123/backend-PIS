@@ -1,0 +1,145 @@
+services:
+  # Base de datos PostgreSQL
+  - type: web
+    name: bolsafeucn-db
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: ./bolsafeucn_back
+    autoDeploy: true
+    envVars:
+      # PostgreSQL Connection
+      # IMPORTANTE: Cuando crees tu base de datos en Render, obtendrás una URL tipo:
+      # postgres://user:password@host.oregon-postgres.render.com/database
+      # Debes convertirla al formato: Host=host;Port=5432;Database=database;Username=user;Password=password;SSL Mode=Require;Trust Server Certificate=true
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+        # NOTA: Agregar manualmente desde el dashboard de Render en el formato correcto
+
+      # JWT Configuration
+      - key: Jwt__Key
+        generateValue: true
+        # O definir un valor específico:
+        # value: tu-clave-secreta-jwt-super-segura-minimo-32-caracteres
+
+      # Resend API (Email Service)
+      - key: ResendApiKey
+        sync: false
+        # NOTA: Agregar manualmente desde el dashboard de Render con tu API key de Resend
+
+      # Email Configuration
+      - key: EmailConfiguration__From
+        value: noreply@bolsafeucn.cl
+      - key: EmailConfiguration__VerificationSubject
+        value: Verifica tu cuenta - BolsaFEUCN
+      - key: EmailConfiguration__PasswordResetSubject
+        value: Recuperación de contraseña - BolsaFEUCN
+      - key: EmailConfiguration__WelcomeSubject
+        value: Bienvenido a BolsaFEUCN
+
+      # Admin Notifications
+      - key: AdminNotifications__Email
+        value: admin@bolsafeucn.cl
+        # NOTA: Cambiar por el email real del administrador
+
+      # Cloudinary Configuration (File Storage)
+      - key: Cloudinary__CloudName
+        sync: false
+        # NOTA: Agregar manualmente desde el dashboard de Render
+      - key: Cloudinary__ApiKey
+        sync: false
+        # NOTA: Agregar manualmente desde el dashboard de Render
+      - key: Cloudinary__ApiSecret
+        sync: false
+        # NOTA: Agregar manualmente desde el dashboard de Render
+
+      # Image Configuration
+      - key: Images__DefaultUserImageUrl
+        value: https://res.cloudinary.com/tu-cloud/image/upload/v1/defaults/user-avatar.png
+        # NOTA: Reemplazar con la URL real de tu imagen por defecto
+      - key: Images__DefaultUserImagePublicId
+        value: defaults/user-avatar
+        # NOTA: Reemplazar con el public_id real de Cloudinary
+      - key: Images__TransformationQuality
+        value: auto:good
+      - key: Images__TransformationCrop
+        value: fill
+      - key: Images__TransformationFetchFormat
+        value: auto
+      - key: Images__ImageMaxSizeInBytes
+        value: 5242880
+        # 5MB en bytes
+      - key: Images__TransformationWidth
+        value: 800
+      - key: Images__ImageAllowedExtensions__0
+        value: .jpg
+      - key: Images__ImageAllowedExtensions__1
+        value: .jpeg
+      - key: Images__ImageAllowedExtensions__2
+        value: .png
+      - key: Images__ImageAllowedExtensions__3
+        value: .webp
+      - key: Images__DefaultPageSize
+        value: 10
+      - key: Images__FewUnitsAvailable
+        value: 15
+
+      # Storage Configuration
+      - key: Storage__Provider
+        value: cloudinary
+        # Opciones: "cloudinary" o "local"
+      - key: Storage__LocalPath
+        value: /app/uploads
+        # Solo necesario si Storage__Provider = "local"
+      - key: Storage__BaseUrl
+        value: /uploads
+        # Solo necesario si Storage__Provider = "local"
+
+      # ASP.NET Core Environment
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+
+      # Serilog Configuration (Logging)
+      - key: Serilog__MinimumLevel__Default
+        value: Information
+      - key: Serilog__MinimumLevel__Override__Microsoft
+        value: Warning
+      - key: Serilog__MinimumLevel__Override__System
+        value: Warning
+
+      # URLs permitidas para CORS
+      - key: AllowedOrigins__0
+        value: https://tu-frontend.onrender.com
+        # NOTA: Reemplazar con la URL real de tu frontend en Render
+      - key: AllowedOrigins__1
+        value: https://www.bolsafeucn.cl
+        # NOTA: Agregar tu dominio personalizado si lo tienes
+
+databases:
+  # Base de datos PostgreSQL
+  - name: bolsafeucndb
+    databaseName: bolsafeucndb
+    user: bolsafeucnuser
+    plan: free
+    region: oregon
+# INSTRUCCIONES POST-DEPLOYMENT:
+# ================================
+# 1. Crear la base de datos PostgreSQL en Render y copiar la connection string
+# 2. Actualizar ConnectionStrings__DefaultConnection con la URL real
+# 3. Generar o definir un JWT Key seguro (mínimo 32 caracteres)
+# 4. Obtener API key de Resend (https://resend.com) y agregarla
+# 5. Configurar cuenta de Cloudinary y agregar CloudName, ApiKey, ApiSecret
+# 6. Subir imagen de usuario por defecto a Cloudinary y actualizar URLs
+# 7. Actualizar el email del administrador (AdminNotifications__Email)
+# 8. Actualizar las URLs de CORS (AllowedOrigins) con tu frontend real
+# 9. Verificar que el Dockerfile esté optimizado para producción
+# 10. Las migraciones se ejecutarán automáticamente al iniciar (DataSeeder.Initialize)
+
+# NOTAS IMPORTANTES:
+# ==================
+# - Render usa el formato "Seccion__Clave" para variables de configuración anidadas
+# - El plan gratuito incluye 750 horas/mes y se suspende después de 15 min de inactividad
+# - La base de datos gratuita de Render expira después de 90 días
+# - Considera usar planes pagos para producción real
+# - Hangfire usa MemoryStorage (se reiniciará con cada deploy)

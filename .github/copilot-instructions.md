@@ -251,6 +251,30 @@ make db-restart  # Drops DB, applies migrations, starts watch
 
 **CORS**: Configured to allow `http://localhost:3000` (Next.js frontend). Add more origins in `Program.cs` if needed.
 
+## Production Deployment & Configuration
+
+**Deployment Platform**: Render (free tier available)
+
+**Configuration Files**:
+- `.env.example`: Template con todas las variables de entorno sensibles (API keys, DB credentials)
+- `appsettings.Example.json`: Estructura completa de configuración (publicamente segura, sin secretos)
+- `RENDER_DEPLOYMENT.md`: Guía paso a paso para desplegar a Render
+
+**Environment Variables Required** (set in Render dashboard):
+- `ConnectionStrings__DefaultConnection`: URL de PostgreSQL (formato: `Server=host;Port=5432;Database=...;Username=...;Password=...;SSL Mode=Require;Trust Server Certificate=true`)
+- `Jwt__Key`: Clave secreta JWT (mínimo 32 caracteres, generar con `openssl rand -base64 32`)
+- `ResendApiKey`: API key de Resend para emails (https://resend.com/api-keys)
+- `Cloudinary__CloudName`, `Cloudinary__ApiKey`, `Cloudinary__ApiSecret`: Credenciales de Cloudinary (https://cloudinary.com/console)
+- `ASPNETCORE_ENVIRONMENT`: Siempre `Production` en Render
+- `AdminNotifications__Email`: Email del administrador
+- `AllowedOrigins__*`: URLs CORS permitidas (ej: frontend en Render)
+
+**Security Notes**:
+- **NUNCA** subir `.env` a Git (ya está en `.gitignore`)
+- Variables sensibles SIEMPRE van en Render's Environment Variables dashboard, NUNCA en archivos
+- Rotar claves de API cada 6 meses
+- PostgreSQL gratuita en Render expira en 90 días - usar plan pagado para producción real
+
 ## Common Patterns to Follow
 
 1. **DTOs everywhere**: Never expose domain models directly in API responses

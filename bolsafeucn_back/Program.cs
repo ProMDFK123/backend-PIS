@@ -19,6 +19,10 @@ using Serilog;
 using bolsafeucn_back.src.Infrastructure.Extensions;
 using Microsoft.Extensions.FileProviders;
 
+// Detectar entorno
+var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+var isDevelopment = environment == "Development";
+
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(
         new ConfigurationBuilder()
@@ -29,9 +33,15 @@ Log.Logger = new LoggerConfiguration()
 
 var builder = WebApplication.CreateBuilder(args);
 
+// En producción, agregar variables de entorno con prioridad sobre appsettings.json
+if (!isDevelopment)
+{
+    builder.Configuration.AddEnvironmentVariables();
+}
+
 try
 {
-    Log.Information("Starting web application");
+    Log.Information($"Starting web application in {environment} environment");
 
     // Serilog
     builder.Host.UseSerilog(
@@ -138,8 +148,14 @@ try
     // =========================
     // 5) PostgreSQL
     // =========================
+    // Priorizar DATABASE_URL (estándar de Render) si existe
+    var databaseUrl = builder.Configuration["DATABASE_URL"];
+    var connectionString = !string.IsNullOrEmpty(databaseUrl)
+        ? ConvertDatabaseUrlToConnectionString(databaseUrl)
+        : builder.Configuration.GetConnectionString("DefaultConnection");
+
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+        options.UseNpgsql(connectionString)
     );
     #endregion
 
@@ -186,7 +202,7 @@ try
     builder.Services.AddScoped<IFileService, FileService>();
     builder.Services.AddScoped<INotificationService, NotificationService>();
     builder.Services.AddDocumentStorageProvider(builder.Configuration);
-    
+
 
     builder.Services.AddMapster();
 
@@ -270,4 +286,14 @@ async Task SeedAndMapDatabase(IHost app)
     await DataSeeder.Initialize(configuration, serviceProvider);
     MapperExtensions.ConfigureMapster(serviceProvider);
     Log.Information("Seed de base de datos y configuración de mappers completados");
+}
+
+static string ConvertDatabaseUrlToConnectionString(string databaseUrl)
+{
+    // Convertir DATABASE_URL de Render (postgresql://user:pass@host:5432/db)
+    // al formato de connection string de ASP.NET
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+
+    return $"Server={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
 }
