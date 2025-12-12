@@ -385,10 +385,31 @@ async Task SeedAndMapDatabase(IHost app)
 
 static string ConvertDatabaseUrlToConnectionString(string databaseUrl)
 {
-    // Convertir DATABASE_URL de Render (postgresql://user:pass@host:5432/db)
-    // al formato de connection string de ASP.NET
-    var uri = new Uri(databaseUrl);
-    var userInfo = uri.UserInfo.Split(':');
+    try
+    {
+        Console.WriteLine("[DB] Parseando DATABASE_URL...");
+        Console.WriteLine($"[DB] DATABASE_URL recibida (parcial): {databaseUrl.Substring(0, Math.Min(30, databaseUrl.Length))}...");
 
-    return $"Server={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+        var uri = new Uri(databaseUrl);
+        var userInfo = uri.UserInfo.Split(':');
+
+        // Si uri.Port es -1, usar puerto por defecto 5432
+        var port = uri.Port > 0 ? uri.Port : 5432;
+
+        Console.WriteLine($"[DB] Host: {uri.Host}");
+        Console.WriteLine($"[DB] Port: {port}");
+        Console.WriteLine($"[DB] Database: {uri.AbsolutePath.TrimStart('/')}");
+        Console.WriteLine($"[DB] Username: {userInfo[0]}");
+
+        var connectionString = $"Server={uri.Host};Port={port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+
+        Console.WriteLine("[DB] ✓ Connection string generado correctamente");
+        return connectionString;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DB] ❌ Error al parsear DATABASE_URL: {ex.Message}");
+        Console.WriteLine($"[DB] DATABASE_URL completa: {databaseUrl}");
+        throw;
+    }
 }
