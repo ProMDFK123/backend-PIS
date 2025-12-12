@@ -20,13 +20,40 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                 var userManager = serviceProvider.GetRequiredService<UserManager<GeneralUser>>();
                 var roleManager = serviceProvider.GetRequiredService<RoleManager<Role>>();
 
-                Log.Information("DataSeeder: Iniciando la migración de la base de datos...");
-                await context.Database.MigrateAsync();
-                Log.Information("DataSeeder: Migración de la base de datos completada.");
+                Console.WriteLine("[SEED-DB] Iniciando la migración de la base de datos...");
+                try
+                {
+                    // Verificar si la base de datos puede ser alcanzada
+                    var canConnect = await context.Database.CanConnectAsync();
+                    Console.WriteLine($"[SEED-DB] ¿Puede conectar a la DB? {canConnect}");
 
+                    // Obtener migraciones pendientes
+                    var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+                    var pendingCount = pendingMigrations.Count();
+                    Console.WriteLine($"[SEED-DB] Migraciones pendientes: {pendingCount}");
+
+                    if (pendingCount > 0)
+                    {
+                        Console.WriteLine($"[SEED-DB] Aplicando {pendingCount} migraciones...");
+                        await context.Database.MigrateAsync();
+                        Console.WriteLine("[SEED-DB] ✓ Migraciones aplicadas exitosamente");
+                    }
+                    else
+                    {
+                        Console.WriteLine("[SEED-DB] No hay migraciones pendientes");
+                    }
+                }
+                catch (Exception migrationEx)
+                {
+                    Console.WriteLine($"[SEED-DB] ❌ Error durante migración: {migrationEx.Message}");
+                    Console.WriteLine($"[SEED-DB] Stack trace: {migrationEx.StackTrace}");
+                    throw;
+                }
+
+                Console.WriteLine("[SEED-DB] Verificando si existen roles...");
                 if (!await context.Roles.AnyAsync())
                 {
-                    Log.Information("DataSeeder: No se encontraron roles, creando roles...");
+                    Console.WriteLine("[SEED-DB] No se encontraron roles, creando roles...");
                     var roles = new List<Role>
                     {
                         new Role { Name = "Admin", NormalizedName = "ADMIN" },
@@ -38,16 +65,16 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                     {
                         await roleManager.CreateAsync(role);
                     }
-                    Log.Information("DataSeeder: Roles creados exitosamente.");
+                    Console.WriteLine("[SEED-DB] ✓ Roles creados exitosamente.");
                 }
 
                 if (!await context.Users.AnyAsync())
                 {
-                    Log.Information(
-                        "DataSeeder: No se encontraron usuarios, creando usuarios de prueba..."
+                    Console.WriteLine(
+                        "[SEED-DB] No se encontraron usuarios, creando usuarios de prueba..."
                     );
                     await SeedUsers(userManager, context, configuration);
-                    Log.Information("DataSeeder: Usuarios de prueba creados exitosamente.");
+                    Console.WriteLine("[SEED-DB] ✓ Usuarios de prueba creados exitosamente.");
                 }
 
                 if (!await context.Offers.AnyAsync())
