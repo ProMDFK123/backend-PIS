@@ -27,12 +27,23 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                     var canConnect = await context.Database.CanConnectAsync();
                     Console.WriteLine($"[SEED-DB] ¿Puede conectar a la DB? {canConnect}");
 
-                    // Obtener migraciones pendientes
+                    // Obtener todas las migraciones (aplicadas y pendientes)
+                    var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
+                    var appliedCount = appliedMigrations.Count();
+                    Console.WriteLine($"[SEED-DB] Migraciones aplicadas: {appliedCount}");
+
                     var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
                     var pendingCount = pendingMigrations.Count();
                     Console.WriteLine($"[SEED-DB] Migraciones pendientes: {pendingCount}");
 
-                    if (pendingCount > 0)
+                    // Si no hay migraciones aplicadas ni pendientes, crear la base de datos desde cero
+                    if (appliedCount == 0 && pendingCount == 0)
+                    {
+                        Console.WriteLine("[SEED-DB] ⚠️ No se detectaron migraciones. Creando base de datos desde el modelo actual...");
+                        await context.Database.EnsureCreatedAsync();
+                        Console.WriteLine("[SEED-DB] ✓ Base de datos creada desde el modelo");
+                    }
+                    else if (pendingCount > 0)
                     {
                         Console.WriteLine($"[SEED-DB] Aplicando {pendingCount} migraciones...");
                         await context.Database.MigrateAsync();
@@ -40,7 +51,7 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                     }
                     else
                     {
-                        Console.WriteLine("[SEED-DB] No hay migraciones pendientes");
+                        Console.WriteLine("[SEED-DB] Base de datos actualizada, no hay migraciones pendientes");
                     }
                 }
                 catch (Exception migrationEx)
