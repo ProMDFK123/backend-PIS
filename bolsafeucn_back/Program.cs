@@ -218,7 +218,7 @@ try
     // 6) DI (repos/services/mappers)
     // =========================
     Console.WriteLine("[STARTUP] Registrando servicios de Dependency Injection...");
-    builder.Services.AddScoped<StudentMapper>;
+    builder.Services.AddScoped<StudentMapper>();
     builder.Services.AddScoped<IndividualMapper>();
     builder.Services.AddScoped<CompanyMapper>();
     builder.Services.AddScoped<AdminMapper>();
