@@ -168,20 +168,23 @@ try
     // 4) Resend (emails)
     // =========================
     Console.WriteLine("[STARTUP] Configurando Resend (servicio de emails)...");
+
+    // Verificar ResendApiKey una sola vez en el startup
+    var resendApiKey = builder.Configuration.GetValue<string>("ResendApiKey");
+    if (string.IsNullOrEmpty(resendApiKey))
+    {
+        Console.WriteLine("[STARTUP] ⚠️ ResendApiKey no configurada - emails no funcionarán");
+    }
+    else
+    {
+        Console.WriteLine("[STARTUP] ✓ ResendApiKey encontrada");
+    }
+
     builder.Services.AddOptions();
     builder.Services.AddHttpClient<ResendClient>();
     builder.Services.Configure<ResendClientOptions>(o =>
     {
-        var apiKey = builder.Configuration.GetValue<string>("ResendApiKey");
-        if (string.IsNullOrEmpty(apiKey))
-        {
-            Console.WriteLine("[STARTUP] ⚠️ ResendApiKey no configurada - emails no funcionarán");
-        }
-        else
-        {
-            Console.WriteLine("[STARTUP] ✓ ResendApiKey encontrada");
-        }
-        o.ApiToken = apiKey!;
+        o.ApiToken = resendApiKey!;
     });
     builder.Services.AddTransient<IResend, ResendClient>();
     Console.WriteLine("[STARTUP] ✓ Resend configurado");

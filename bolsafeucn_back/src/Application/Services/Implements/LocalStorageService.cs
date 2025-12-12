@@ -27,8 +27,22 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             _configuration = configuration;
             _fileRepository = fileRepository;
             _userRepository = userRepository;
-            _basePath = _configuration["Storage:LocalPath"]!;
+
+            // Obtener la ruta base desde configuración, con fallback a una ruta por defecto
+            var configuredPath = _configuration["Storage:LocalPath"];
+            if (string.IsNullOrEmpty(configuredPath))
+            {
+                // Si Storage:LocalPath está vacío, usar uploads en el contenido root
+                _basePath = Path.Combine(_environment.ContentRootPath, "uploads");
+                Log.Warning("Storage:LocalPath no configurado. Usando ruta por defecto: {BasePath}", _basePath);
+            }
+            else
+            {
+                _basePath = configuredPath;
+            }
+
             _baseUrl = _configuration["Storage:BaseUrl"] ?? "/uploads";
+
             if (!Directory.Exists(_basePath))
             {
                 Directory.CreateDirectory(_basePath);
@@ -41,7 +55,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             {
                 Log.Warning("El usuario {UserId} ya tiene un CV asociado. Se sobrescribirá el existente.", user.Id);
                 user.CV.IsActive = false;
-            }   
+            }
             if (cvFile == null || cvFile.Length == 0)
             {
                 throw new ArgumentException("File is empty or null");
@@ -80,7 +94,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             };
 
             var result = await _fileRepository.CreateCVAsync(newFile);
-            if (result == false) 
+            if (result == false)
             {
                 throw new Exception("Error al guardar el CV en la base de datos.");
             }
@@ -88,11 +102,11 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             user.CV = newFile;
 
             var updateResult = await _userRepository.UpdateAsync(user);
-            if (!updateResult) 
+            if (!updateResult)
             {
                 Log.Error("Error al asociar el CV al usuario {UserId}", user.Id);
                 throw new Exception("Error al asociar el CV al usuario.");
-            }     
+            }
             return true;
         }
         public async Task<bool> DeleteCVAsync(GeneralUser user)
