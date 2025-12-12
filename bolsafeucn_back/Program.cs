@@ -26,7 +26,7 @@ var isDevelopment = environment == "Development";
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(
         new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
             .Build()
     )
     .CreateLogger();
