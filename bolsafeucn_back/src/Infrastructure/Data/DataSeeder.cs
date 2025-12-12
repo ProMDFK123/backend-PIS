@@ -27,31 +27,41 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                     var canConnect = await context.Database.CanConnectAsync();
                     Console.WriteLine($"[SEED-DB] ¿Puede conectar a la DB? {canConnect}");
 
-                    // Obtener todas las migraciones (aplicadas y pendientes)
-                    var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
-                    var appliedCount = appliedMigrations.Count();
-                    Console.WriteLine($"[SEED-DB] Migraciones aplicadas: {appliedCount}");
-
-                    var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-                    var pendingCount = pendingMigrations.Count();
-                    Console.WriteLine($"[SEED-DB] Migraciones pendientes: {pendingCount}");
-
-                    // Si no hay migraciones aplicadas ni pendientes, crear la base de datos desde cero
-                    if (appliedCount == 0 && pendingCount == 0)
+                    // Verificar si la tabla AspNetRoles existe (tabla clave de Identity)
+                    bool tablesExist = false;
+                    try
                     {
-                        Console.WriteLine("[SEED-DB] ⚠️ No se detectaron migraciones. Creando base de datos desde el modelo actual...");
-                        await context.Database.EnsureCreatedAsync();
-                        Console.WriteLine("[SEED-DB] ✓ Base de datos creada desde el modelo");
+                        var testQuery = await context.Database.ExecuteSqlRawAsync("SELECT 1 FROM \"AspNetRoles\" LIMIT 1");
+                        tablesExist = true;
+                        Console.WriteLine("[SEED-DB] ✓ Las tablas de Identity ya existen");
                     }
-                    else if (pendingCount > 0)
+                    catch
                     {
-                        Console.WriteLine($"[SEED-DB] Aplicando {pendingCount} migraciones...");
-                        await context.Database.MigrateAsync();
-                        Console.WriteLine("[SEED-DB] ✓ Migraciones aplicadas exitosamente");
+                        Console.WriteLine("[SEED-DB] Las tablas de Identity NO existen, se necesitan crear");
+                        tablesExist = false;
                     }
-                    else
+
+                    if (!tablesExist)
                     {
-                        Console.WriteLine("[SEED-DB] Base de datos actualizada, no hay migraciones pendientes");
+                        Console.WriteLine("[SEED-DB] Eliminando base de datos existente (si existe)...");
+                        await context.Database.EnsureDeletedAsync();
+                        Console.WriteLine("[SEED-DB] ✓ Base de datos eliminada");
+
+                        Console.WriteLine("[SEED-DB] Creando base de datos con todas las tablas...");
+                        var created = await context.Database.EnsureCreatedAsync();
+                        Console.WriteLine($"[SEED-DB] ✓ EnsureCreatedAsync retornó: {created}");
+
+                        // Verificar que las tablas se crearon
+                        try
+                        {
+                            var verifyQuery = await context.Database.ExecuteSqlRawAsync("SELECT 1 FROM \"AspNetRoles\" LIMIT 1");
+                            Console.WriteLine("[SEED-DB] ✓ Verificación: Tablas creadas correctamente");
+                        }
+                        catch (Exception verifyEx)
+                        {
+                            Console.WriteLine($"[SEED-DB] ❌ Las tablas NO se crearon correctamente: {verifyEx.Message}");
+                            throw new Exception("No se pudieron crear las tablas de la base de datos");
+                        }
                     }
                 }
                 catch (Exception migrationEx)
