@@ -4,13 +4,17 @@ bin/
 obj/
 [Bb]uild/
 [Ll]og/
+logs/
 
 # Archivos generados por usuario
+uploads/
 *.user
 *.userosscache
 *.suo
 *.sln.docstates
 *.userprefs
+*.lck
+*.vbak
 
 # Archivos de cache y temporales
 *.tmp
@@ -63,3 +67,7 @@ desktop.ini
 
 # Docker
 docker-compose.override.yml
+
+
+.config/dotnet-tools.json
+bolsafeucn_back/appsettings.json

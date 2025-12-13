@@ -1,35 +1,273 @@
+using bolsafe_ucn.src.Application.Services.Interfaces;
+using bolsafeucn_back.src.Application.Infrastructure.Data;
+using bolsafeucn_back.src.Application.Mappers;
+using bolsafeucn_back.src.Application.Services.Implements;
+using bolsafeucn_back.src.Application.Services.Interfaces;
+using bolsafeucn_back.src.Domain.Models;
+using bolsafeucn_back.src.Infrastructure.Data;
+using bolsafeucn_back.src.Infrastructure.Repositories.Implements;
+using bolsafeucn_back.src.Infrastructure.Repositories.Interfaces;
+using Mapster;
+using Hangfire;
+using Hangfire.MemoryStorage;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using bolsafeucn_back.src.data;
-using bolsafeucn_back.src.interfaces;
-using bolsafeucn_back.src.services;
-using bolsafeucn_back.src.repositories;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using Swashbuckle.AspNetCore.SwaggerUI;
-using Swashbuckle.AspNetCore.Swagger;
+using Microsoft.Net.Http.Headers; // <<-- para CORS (HeaderNames)
+using Resend;
+using Serilog;
+using bolsafeucn_back.src.Infrastructure.Extensions;
+using Microsoft.Extensions.FileProviders;
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(
+        new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build()
+    )
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// Configuración de PostgreSQL
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Inyección de dependencias
-builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
-builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
+try
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    Log.Information("Starting web application");
+
+    // Serilog
+    builder.Host.UseSerilog(
+        (context, configuration) => configuration.ReadFrom.Configuration(context.Configuration)
+    );
+
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
+
+    #region Identity
+    // =========================
+    // 1) Identity
+    // =========================
+    builder
+        .Services.AddIdentity<GeneralUser, Role>(options =>
+        {
+            options.User.AllowedUserNameCharacters =
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+            options.User.RequireUniqueEmail = true;
+            options.Password.RequireDigit = true;
+            options.Password.RequiredLength = 8;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireLowercase = true;
+        })
+        .AddRoles<Role>()
+        .AddEntityFrameworkStores<AppDbContext>()
+        .AddDefaultTokenProviders();
+
+    #endregion
+
+    #region Auth
+    // =========================
+    // 2) Auth (JWT)
+    // =========================
+    builder
+        .Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            string? jwtSecret = builder.Configuration["Jwt:Key"];
+            if (string.IsNullOrEmpty(jwtSecret))
+            {
+                throw new InvalidOperationException("La clave secreta JWT no está configurada.");
+            }
+
+            options.TokenValidationParameters =
+                new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                        System.Text.Encoding.UTF8.GetBytes(jwtSecret)
+                    ),
+                    ValidateLifetime = true,
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.Zero,
+                };
+        });
+
+    #endregion
+    #region CORS
+    // =========================
+    // 3) CORS (permitimos el front en 3000)
+    // =========================
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy(
+            "Frontend",
+            policy =>
+            {
+                policy
+                    .WithOrigins(
+                        "http://localhost:3000" // Next.js dev
+                                                // ,"https://localhost:3000"  // agrega si usas https en front
+                                                // ,"https://localhost:7129"  // agrega si llamas al backend en https y navegas desde https
+                    )
+                    .WithHeaders(HeaderNames.ContentType, HeaderNames.Authorization, "Accept")
+                    .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+                    .AllowCredentials(); // opcional si luego usas cookies
+            }
+        );
+    });
+    #endregion
+
+    #region Resend
+    // =========================
+    // 4) Resend (emails)
+    // =========================
+    builder.Services.AddOptions();
+    builder.Services.AddHttpClient<ResendClient>();
+    builder.Services.Configure<ResendClientOptions>(o =>
+    {
+        o.ApiToken = builder.Configuration.GetValue<string>("ResendApiKey")!;
+    });
+    builder.Services.AddTransient<IResend, ResendClient>();
+
+    #endregion
+    #region PostgreSQL
+    // =========================
+    // 5) PostgreSQL
+    // =========================
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+    );
+    #endregion
+
+    #region Hangfire
+    // Hangfire - usa MemoryStorage por simplicidad
+    builder.Services.AddHangfire(configuration =>
+        configuration.UseMemoryStorage()
+    );
+    builder.Services.AddHangfireServer();
+    #endregion
+
+
+    #region DI
+    // =========================
+    // 6) DI (repos/services/mappers)
+    // =========================
+    builder.Services.AddScoped<StudentMapper>();
+    builder.Services.AddScoped<IndividualMapper>();
+    builder.Services.AddScoped<CompanyMapper>();
+    builder.Services.AddScoped<AdminMapper>();
+    builder.Services.AddScoped<OfferMapper>();
+    builder.Services.AddScoped<ProfileMapper>();
+
+    builder.Services.AddScoped<IUserRepository, UserRepository>();
+    builder.Services.AddScoped<IOfferRepository, OfferRepository>();
+    builder.Services.AddScoped<IBuySellRepository, BuySellRepository>();
+    builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
+    builder.Services.AddScoped<IJobApplicationRepository, JobApplicationRepository>();
+    builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+    builder.Services.AddScoped<IAdminNotificationRepository, AdminNotificationRepository>();
+    builder.Services.AddScoped<IFileRepository, FileRepository>();
+    builder.Services.AddScoped<IPublicationRepository, PublicationRepository>();
+    builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+
+    builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<IEmailService, EmailService>();
+    builder.Services.AddScoped<ITokenService, TokenService>();
+    builder.Services.AddScoped<IOfferService, OfferService>();
+    builder.Services.AddScoped<IJobApplicationService, JobApplicationService>();
+    builder.Services.AddScoped<IPublicationService, PublicationService>();
+    builder.Services.AddScoped<IBuySellService, BuySellService>();
+    builder.Services.AddScoped<IReviewService, ReviewService>();
+    builder.Services.AddScoped<IPdfGeneratorService, PdfGeneratorService>();
+    builder.Services.AddScoped<IFileService, FileService>();
+    builder.Services.AddScoped<INotificationService, NotificationService>();
+    builder.Services.AddDocumentStorageProvider(builder.Configuration);
+    
+
+    builder.Services.AddMapster();
+
+    var app = builder.Build();
+
+    #endregion
+    #region Pipeline
+    // =========================
+    // Pipeline
+    // =========================
+    #endregion
+    #region Hangfire Dashboard + Recurring Jobs
+    // Hangfire dashboard (solo en desarrollo)
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseHangfireDashboard();
+        // Registrar job recurrente cada hora para cerrar reviews vencidas
+        RecurringJob.AddOrUpdate<IReviewService>(
+            "CloseExpiredReviews",
+            service => service.CloseExpiredReviewsAsync(),
+            Cron.Hourly
+        );
+        Log.Information("Hangfire dashboard habilitado y job recurrente para cierre de reviews programado. Servidor en: http://localhost:5185/hangfire");
+    }
+
+    #endregion
+    #region Middleware
+    // Middleware global de errores (antes de todo)
+    app.UseMiddleware<bolsafeucn_back.src.API.Middlewares.ErrorHandlingMiddleware.ErrorHandlingMiddleware>();
+    #endregion
+
+    // Seed DB + Mapster (al inicio)
+    await SeedAndMapDatabase(app);
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+        Log.Information("Swagger UI habilitado en modo desarrollo");
+    }
+
+    // Si te genera líos en local (http->https), puedes comentar mientras desarrollas:
+    // app.UseHttpsRedirection();
+
+    // CORS debe ir ANTES de auth/authorization
+    app.UseCors("Frontend");
+
+    // Muy importante: primero autenticación, luego autorización
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapControllers();
+
+    Log.Information("Aplicación iniciada correctamente");
+    app.Lifetime.ApplicationStarted.Register(() =>
+    {
+        Console.WriteLine("🔥 SERVIDOR ASP.NET ARRANCÓ CORRECTAMENTE 🔥");
+    });
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
 }
 
-app.UseHttpsRedirection();
-app.UseAuthorization();
-app.MapControllers();
-app.Run();
+// =========================
+// Helpers
+// =========================
+async Task SeedAndMapDatabase(IHost app)
+{
+    using var scope = app.Services.CreateScope();
+    var serviceProvider = scope.ServiceProvider;
+    var configuration = app.Services.GetRequiredService<IConfiguration>();
+
+    Log.Information("Iniciando seed de base de datos y configuración de mappers");
+    await DataSeeder.Initialize(configuration, serviceProvider);
+    MapperExtensions.ConfigureMapster(serviceProvider);
+    Log.Information("Seed de base de datos y configuración de mappers completados");
+}

@@ -1,0 +1,44 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Navegamos al directorio raíz del proyecto
+cd "$(dirname "$0")/.."
+
+# Verificar archivos C# en staging
+STAGED_CS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "\.cs$" || true)
+
+if [ -n "$STAGED_CS_FILES" ]; then
+    echo "Formateando archivos de C#..."
+    
+    # Convertir los archivos a rutas relativas desde bolsafeucn_back
+    FILES_TO_FORMAT=""
+    for file in $STAGED_CS_FILES; do
+        # Verificar si el archivo está en bolsafeucn_back
+        if echo "$file" | grep -q "^bolsafeucn_back/"; then
+            # Quitar el prefijo bolsafeucn_back/ para el comando dotnet format
+            RELATIVE_FILE=$(echo "$file" | sed 's|^bolsafeucn_back/||')
+            FILES_TO_FORMAT="$FILES_TO_FORMAT $RELATIVE_FILE"
+        fi
+    done
+    
+    if [ -n "$FILES_TO_FORMAT" ]; then
+        cd bolsafeucn_back
+        dotnet format bolsafeucn_back.csproj --include $FILES_TO_FORMAT --verbosity normal
+        FORMAT_EXIT_CODE=$?
+        
+        if [ $FORMAT_EXIT_CODE -eq 0 ]; then
+            # Volver al directorio raíz y añadir los archivos formateados
+            cd ..
+            git add $STAGED_CS_FILES
+            echo "✓ Archivos formateados correctamente"
+        else
+            echo "⚠ Formato omitido (algunos archivos pueden tener errores)"
+        fi
+    else
+        echo "No hay archivos C# en bolsafeucn_back para formatear"
+    fi
+else
+    echo "No hay archivos C# en staging"
+fi
+
+echo "Pre-commit completado"
