@@ -1,7 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using bolsafe_ucn.src.Application.Services.Interfaces;
+using bolsafeucn_back.src.Application.Services.Interfaces;
 using bolsafeucn_back.src.Domain.Models;
+using bolsafeucn_back.src.Infrastructure.Repositories.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
@@ -10,11 +11,13 @@ namespace bolsafeucn_back.src.Application.Services.Implements
     public class TokenService : ITokenService
     {
         private readonly IConfiguration _configuration;
+        private readonly ITokenRepository _tokenRepository;
         private readonly string _jwtSecret;
 
-        public TokenService(IConfiguration configuration)
+        public TokenService(IConfiguration configuration, ITokenRepository tokenRepository)
         {
             _configuration = configuration;
+            _tokenRepository = tokenRepository;
             _jwtSecret = _configuration.GetValue<string>("Jwt:Key")!;
         }
 
@@ -70,6 +73,44 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                 Log.Error(ex, "Error al crear token JWT para usuario ID: {UserId}", user.Id);
                 throw new InvalidOperationException("Error creando el token JWT.", ex);
             }
+        }
+
+        /// <summary>
+        /// Agrega un token a la whitelist para el usuario dado.
+        /// </summary>
+        /// <param name="user">Usuario al que se le agrega el token</param>
+        /// <param name="token">Token a agregar</param>
+        /// <returns>Indica si la operación fue exitosa</returns>
+        public async Task<bool> AddToWhitelistAsync(Whitelist token)
+        {
+            var result = await _tokenRepository.AddToWhitelistAsync(token);
+            if (result == null)
+            {
+                Log.Error($"Error al agregar token a la whitelist para el usuario ID: {token.UserId}");
+                return false;
+            }
+            Log.Information($"Token agregado a la whitelist para el usuario ID: {token.UserId}");
+            return true;
+        }
+
+        /// <summary>
+        /// Revoca todos los tokens activos para el usuario dado.
+        /// </summary>
+        /// <param name="userId">ID del usuario</param>
+        /// <returns>Indica si la operación fue exitosa</returns>
+        public async Task<bool> RevokeAllActiveTokensAsync(int userId)
+        {
+            var activeTokens = await _tokenRepository.ExistsByUserIdAsync(userId);
+            if (!activeTokens)
+            {
+                Log.Information($"No hay tokens activos para revocar para el usuario ID: {userId}");
+                return false; // No hay tokens que revocar
+            }
+
+            Log.Information($"Revocando tokens para el usuario ID: {userId}");
+            await _tokenRepository.RemoveAllFromWhitelistByUserIdAsync(userId);
+            Log.Information($"Tokens activos revocados para el usuario ID: {userId}");
+            return true;
         }
     }
 }

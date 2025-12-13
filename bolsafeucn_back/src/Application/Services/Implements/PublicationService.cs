@@ -266,6 +266,98 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             );
             // 2. Mapea y devuelve el DTO
             return _mapper.Adapt<IEnumerable<PublicationsDTO>>((TypeAdapterConfig)publications);
+<<<<<<< HEAD
+        }
+        /// <summary>
+        /// Maximum number of times a user can appeal a rejection for a single publication.
+        /// </summary>
+        private const int MAX_APPEALS = 3;
+
+        public PublicationService(IPublicationRepository publicationRepository)
+        {
+            _publicationRepository = publicationRepository;
+        }
+
+        /// <summary>
+        /// Approves a publication and makes it visible.
+        /// </summary>
+        public async Task<GenericResponse<string>> AdminApprovePublicationAsync(int publicationId)
+        {
+            // 1. Search for publication
+            var publication = await _publicationRepository.GetByIdAsync(publicationId);
+
+            // 2. Validation: Use Exception to trigger Middleware 404
+            if (publication == null)
+                throw new KeyNotFoundException("La publicación no existe.");
+
+            // 3. Update logic
+            publication.statusValidation = StatusValidation.Published;
+            publication.IsActive = true;
+
+            await _publicationRepository.UpdateAsync(publication);
+
+            // 4. Return success only
+            return new GenericResponse<string>("Publicación aprobada y publicada exitosamente.");
+        }
+
+        /// <summary>
+        /// Rejects a publication with a reason and hides it.
+        /// </summary>
+        public async Task<GenericResponse<string>> AdminRejectPublicationAsync(int publicationId, AdminRejectDto dto)
+        {
+            var publication = await _publicationRepository.GetByIdAsync(publicationId);
+
+            if (publication == null)
+                throw new KeyNotFoundException("La publicación no existe.");
+
+            publication.statusValidation = StatusValidation.Rejected;
+            publication.IsActive = false;
+            publication.AdminRejectionReason = dto.Reason;
+
+            await _publicationRepository.UpdateAsync(publication);
+
+            return new GenericResponse<string>("Publicación rechazada. Se ha guardado el motivo.");
+        }
+
+        /// <summary>
+        /// Allows a user to appeal a rejection if limits allow.
+        /// </summary>
+        public async Task<GenericResponse<string>> AppealPublicationAsync(int publicationId, int userId, UserAppealDto dto)
+        {
+            var publication = await _publicationRepository.GetByIdAsync(publicationId);
+
+            // 1. Validate existence -> 404 Not Found
+            if (publication == null)
+                throw new KeyNotFoundException("La publicación no existe.");
+
+            // 2. Validate ownership -> 401 Unauthorized (Based on JobApplicationService pattern)
+            if (publication.UserId != userId)
+                throw new UnauthorizedAccessException("No tienes permiso para apelar esta publicación.");
+
+            // 3. Validate status -> 409 Conflict (InvalidOperationException maps to 409 in your middleware)
+            if (publication.statusValidation != StatusValidation.Rejected)
+                throw new InvalidOperationException("Solo se pueden apelar publicaciones que han sido rechazadas.");
+
+            // 4. Validate limits -> 409 Conflict
+            if (publication.AppealCount >= MAX_APPEALS)
+            {
+                throw new InvalidOperationException(
+                    $"Has alcanzado el límite máximo de {MAX_APPEALS} apelaciones para esta publicación."
+                );
+            }
+
+            // 5. Process appeal
+            publication.statusValidation = StatusValidation.InProcess;
+            publication.UserAppealJustification = dto.Justification;
+            publication.AppealCount++;
+
+            await _publicationRepository.UpdateAsync(publication);
+
+            return new GenericResponse<string>(
+                $"Apelación enviada exitosamente. Intento {publication.AppealCount} de {MAX_APPEALS}. Un administrador revisará tu caso."
+            );
+=======
+>>>>>>> dev
         }
     }
 }

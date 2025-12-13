@@ -1862,5 +1862,27 @@ namespace bolsafeucn_back.src.API.Controllers
         }
 
         #endregion
+
+
+        /// <summary>
+        /// Allows the owner of a rejected publication to appeal the decision.
+        /// </summary>
+        /// <param name="id">The ID of the publication to appeal.</param>
+        /// <param name="dto">The justification for the appeal.</param>
+        [HttpPost("{id}/appeal")]
+        [Authorize] // Cualquier usuario autenticado (que sea dueño)
+        public async Task<IActionResult> AppealPublication(int id, [FromBody] UserAppealDto dto)
+        {
+            // 1. Obtener ID del usuario desde el Token JWT (Claims)
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized(new { message = "Token inválido" });
+
+            var userId = int.Parse(userIdClaim.Value);
+
+            // 2. Llamar al servicio (validará si es dueño, si está rechazada, límites, etc.)
+            var response = await _publicationService.AppealPublicationAsync(id, userId, dto);
+
+            return Ok(response);
+        }
     }
 }

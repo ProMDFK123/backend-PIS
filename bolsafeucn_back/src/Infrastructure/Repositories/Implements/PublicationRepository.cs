@@ -49,4 +49,17 @@ public class PublicationRepository : IPublicationRepository
             .AsNoTracking()
             .ToListAsync();
     }
+
+    public async Task<Publication?> GetByIdAsync(int id)
+    {
+        return await _context.Publications
+            .FirstOrDefaultAsync(p => p.Id == id);
+    }
+
+    // --- NUEVA IMPLEMENTACIÓN: UpdateAsync ---
+    public async Task UpdateAsync(Publication publication)
+    {
+        _context.Publications.Update(publication);
+        await _context.SaveChangesAsync();
+    }
 }

@@ -1,4 +1,3 @@
-using bolsafe_ucn.src.Application.Services.Interfaces;
 using bolsafeucn_back.src.Application.DTOs.AuthDTOs;
 using bolsafeucn_back.src.Application.DTOs.AuthDTOs.ResetPasswordDTOs;
 using bolsafeucn_back.src.Application.DTOs.UserDTOs;
@@ -724,20 +723,18 @@ namespace bolsafeucn_back.src.Application.Services.Implements
         /// <returns>Token de acceso</returns>
         public async Task<string> LoginAsync(LoginDTO loginDTO, HttpContext httpContext)
         {
-            Log.Information("Intento de login para email: {Email}", loginDTO.Email);
+            Log.Information($"Intento de login para email: {loginDTO.Email}");
 
             var user = await _userRepository.GetByEmailAsync(loginDTO.Email);
             if (user == null)
             {
-                Log.Warning("Intento de login con email no registrado: {Email}", loginDTO.Email);
+                Log.Warning($"Intento de login con email no registrado: {loginDTO.Email}");
                 throw new UnauthorizedAccessException("Credenciales inválidas.");
             }
             if (!user.EmailConfirmed)
             {
                 Log.Warning(
-                    "Intento de login con email no verificado: {Email}, UserId: {UserId}",
-                    loginDTO.Email,
-                    user.Id
+                    $"Intento de login con email no verificado: {user.Email}, UserId: {user.Id}"
                 );
                 throw new UnauthorizedAccessException(
                     "Por favor, verifica tu correo electrónico antes de iniciar sesión."
@@ -747,20 +744,51 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             if (!result)
             {
                 Log.Warning(
-                    "Intento de login con contraseña incorrecta para usuario: {Email}, UserId: {UserId}",
-                    loginDTO.Email,
-                    user.Id
+                    $"Intento de login con contraseña incorrecta para usuario: {user.Email}, UserId: {user.Id}"
                 );
                 throw new UnauthorizedAccessException("Credenciales inválidas.");
             }
+            if (user.Banned)
+            {
+                Log.Warning(
+                    $"Intento de login para usuario bloqueado: {user.Email}, UserId: {user.Id}"
+                );
+                throw new UnauthorizedAccessException(
+                    "Tu cuenta ha sido bloqueada. Por favor, contacta al soporte para más información."
+                );
+            }
             var role = await _userRepository.GetRoleAsync(user);
             Log.Information(
-                "Login exitoso para usuario: {Email}, UserId: {UserId}, Role: {Role}",
-                loginDTO.Email,
-                user.Id,
-                role
+                $"Login exitoso para usuario: {user.Email}, UserId: {user.Id}, Role: {role}"
             );
-            return _tokenService.CreateToken(user, role, loginDTO.RememberMe);
+            var newToken = _tokenService.CreateToken(user, role, loginDTO.RememberMe);
+            var whitelist = new Whitelist
+            {
+                UserId = user.Id,
+                Email = user.Email!,
+                Token = newToken,
+                Expiration = loginDTO.RememberMe
+                    ? DateTime.UtcNow.AddDays(24)
+                    : DateTime.UtcNow.AddHours(1)
+            };
+            var whitelistResult = await _tokenService.AddToWhitelistAsync(whitelist);
+
+            if (!whitelistResult)
+            {
+                Log.Error(
+                    $"Error al agregar token a la whitelist para usuario: {user.Email}, UserId: {user.Id}"
+                );
+                throw new Exception("Error al iniciar sesión.");
+            }
+            var updateLoginTimeResult = await _userRepository.UpdateLastLoginAsync(user);
+            if (!updateLoginTimeResult)
+            {
+                Log.Error(
+                    $"Error al actualizar la última hora de login para usuario: {user.Email}, UserId: {user.Id}"
+                );
+                throw new Exception("Error al iniciar sesión.");
+            }
+            return newToken;
         }
 
         /// <summary>
@@ -1103,7 +1131,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                 Log.Error("Error al subir el CV del estudiante con ID: {UserId}", user.Id);
                 throw new Exception("Error al subir el CV del estudiante");
             }
-           
+
             return "CV del usuario actualizado correctamente";
         }
         public async Task<GetCVDTO> DownloadCVByIdAsync(int userId)

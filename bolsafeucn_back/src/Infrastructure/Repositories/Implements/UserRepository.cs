@@ -1,3 +1,4 @@
+using bolsafeucn_back.src.Application.DTOs.UserDTOs.AdminDTOs;
 using bolsafeucn_back.src.Domain.Models;
 using bolsafeucn_back.src.Infrastructure.Data;
 using bolsafeucn_back.src.Infrastructure.Repositories.Interfaces;
@@ -10,12 +11,16 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
     public class UserRepository : IUserRepository
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
         private readonly UserManager<GeneralUser> _userManager;
+        private readonly int _defaultPageSize;
 
-        public UserRepository(AppDbContext context, UserManager<GeneralUser> userManager)
+        public UserRepository(AppDbContext context, UserManager<GeneralUser> userManager, IConfiguration configuration)
         {
             _context = context;
             _userManager = userManager;
+            _configuration = configuration;
+            _defaultPageSize = _configuration.GetValue<int>("Pagination:DefaultPageSize");
         }
 
         /// <summary>
@@ -46,6 +51,16 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
         public async Task<bool> ExistsByRutAsync(string rut)
         {
             return await _context.Users.AnyAsync(e => e.Rut == rut);
+        }
+
+        /// <summary>
+        /// Obtiene el estado de bloqueo de un usuario.
+        /// </summary>
+        /// <param name="userId">ID del usuario</param>
+        /// <returns>Estado de bloqueo del usuario</returns>
+        public async Task<bool> GetBlockedStatusAsync(int userId)
+        {
+            return await _context.Users.AnyAsync(u => u.Id == userId && u.Banned);
         }
 
         /// <summary>
@@ -156,14 +171,14 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
         /// Crea un nuevo administrador en el sistema.
         /// </summary>
         /// <param name="admin">Administrador a crear</param>
-        /// <param name="superAdmin">Indica si el administrador es superadministrador</param>
+        /// <param name="SuperAdmin">Indica si el administrador es superadministrador</param>
         /// <returns>True si se creó el administrador, de lo contrario false.</returns>
-        public async Task<bool> CreateAdminAsync(Admin admin, bool superAdmin)
+        public async Task<bool> CreateAdminAsync(Admin admin, bool SuperAdmin)
         {
             Log.Information(
                 "Creando perfil de admin para usuario ID: {UserId}, SuperAdmin: {SuperAdmin}",
                 admin.GeneralUserId,
-                superAdmin
+                SuperAdmin
             );
             var result = await _context.Admins.AddAsync(admin);
             await _context.SaveChangesAsync();
@@ -264,6 +279,24 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
                 user.Id
             );
             return newPasswordResult.Succeeded;
+        }
+
+        public async Task<bool> UpdateLastLoginAsync(GeneralUser user)
+        {
+            Log.Information($"Actualizando último login para usuario ID: {user.Id}");
+            user.LastLoginAt = DateTime.UtcNow;
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                Log.Error(
+                    $"Error al actualizar último login para usuario ID: {user.Id}. Errores: {string.Join(", ", result.Errors.Select(e => e.Description))}"
+                );
+                return false;
+            }
+            Log.Information(
+                $"Último login actualizado exitosamente para usuario ID: {user.Id}"
+            );
+            return true;
         }
 
         /// <summary>
@@ -384,6 +417,79 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
                             .FirstOrDefaultAsync(u => u.Id == userId);
         }
 
+        /// <summary>
+        /// Obtiene usuarios filtrados para administración.
+        /// </summary>
+        /// <param name="searchParams">Parámetros de búsqueda y paginación</param>
+        /// <returns>Usuarios filtrados y el conteo total</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public async Task<(IEnumerable<GeneralUser>, int TotalCount)> GetFilteredForAdminAsync(SearchParamsDTO searchParams)
+        {
+            var query = _context
+                .Users
+                .AsNoTracking()
+                .AsQueryable();
+            if (query == null)
+            {
+                Log.Warning("No se encontraron usuarios en la base de datos.");
+                throw new ArgumentNullException("No se encontraron usuarios.");
+            }
+            // Filtro por término de búsqueda
+            if (!string.IsNullOrEmpty(searchParams.SearchTerm))
+            {
+                var searchTerm = searchParams.SearchTerm.ToLower();
+                query = query.Where(u =>
+                    u.Email!.ToLower().Contains(searchTerm) ||
+                    u.Rut!.ToLower().Contains(searchTerm) ||
+                    u.UserName!.ToLower().Contains(searchTerm));
+            }
+            // Filtro por tipo
+            if (!string.IsNullOrEmpty(searchParams.UserType))
+            {
+                if (Enum.TryParse(searchParams.UserType, ignoreCase: true, out UserType userTypeEnum))
+                {
+                    query = query.Where(u => u.UserType == userTypeEnum);
+                }
+            }
+            //Filtro por estado
+            if (!string.IsNullOrEmpty(searchParams.BlockedStatus))
+            {
+                var status = searchParams.BlockedStatus.ToLower();
+                if (status == "unblocked")
+                {
+                    query = query.Where(u => u.Banned == false);
+                }
+                else if (status == "blocked")
+                {
+                    query = query.Where(u => u.Banned == true);
+                }
+            }
+            // Ordenamiento
+            query = ApplySorting(query, searchParams.SortBy, searchParams.SortOrder);
+            // Paginación
+            var totalCount = await query.CountAsync();
+            var pageSize = searchParams.PageSize ?? _defaultPageSize;
+            var users = await query
+                .Skip((searchParams.PageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            return (users, totalCount);
+        }
+
+        /// <summary>
+        /// Obtiene el número de administradores en el sistema.
+        /// </summary>
+        /// <returns>El número de administradores activos</returns>
+        public async Task<int> GetNumberOfAdmins()
+        {
+            return await _context.Admins.CountAsync(a => a.GeneralUser!.Banned == false);
+        }
+
+        /// <summary>
+        /// Agrega un nuevo usuario al sistema.
+        /// </summary>
+        /// <param name="user">Usuario a agregar</param>
+        /// <returns>El usuario agregado</returns>
         public async Task<GeneralUser> AddAsync(GeneralUser user)
         {
             _context.Users.Add(user);
@@ -410,6 +516,41 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
             await _context.SaveChangesAsync();
             Log.Information("Usuario ID: {UserId} eliminado exitosamente", id);
             return true;
+        }
+
+        /// <summary>
+        /// Funcion helper para aplicar ordenamiento dinámico a una consulta de usuarios.
+        /// </summary>
+        /// <param name="query"></param>
+        /// <param name="sortBy"></param>
+        /// <param name="sortOrder"></param>
+        /// <returns></returns>
+        private IQueryable<GeneralUser> ApplySorting(IQueryable<GeneralUser> query, string? sortBy, string? sortOrder)
+        {
+            if (string.IsNullOrEmpty(sortBy)) return query.OrderBy(u => u.Id); // Ordenamiento por defecto es por ID
+            if (string.IsNullOrEmpty(sortOrder)) sortOrder = "asc"; // Ordenamiento por defecto es ascendente
+
+            bool ascending = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase);
+
+            return query = sortBy.ToLower() switch
+            {
+                "username" => ascending
+                    ? query.OrderBy(u => u.UserName)
+                    : query.OrderByDescending(u => u.UserName),
+                "email" => ascending
+                    ? query.OrderBy(u => u.Email)
+                    : query.OrderByDescending(u => u.Email),
+                "rut" => ascending
+                    ? query.OrderBy(u => u.Rut)
+                    : query.OrderByDescending(u => u.Rut),
+                "usertype" => ascending
+                    ? query.OrderBy(u => u.UserType)
+                    : query.OrderByDescending(u => u.UserType),
+                "rating" => ascending
+                    ? query.OrderBy(u => u.Rating)
+                    : query.OrderByDescending(u => u.Rating),
+                _ => query.OrderBy(u => u.Id), // Ordenamiento por defecto si el campo no es reconocido
+            };
         }
     }
 }

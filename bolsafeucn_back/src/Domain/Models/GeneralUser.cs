@@ -18,7 +18,8 @@ namespace bolsafeucn_back.src.Domain.Models
         public required bool Banned { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-        public double Rating { get; set; } = 0.0;
+        public DateTime? LastLoginAt { get; set; }
+        public double Rating { get; set; } = 6.0;
         public ICollection<Publication> Publications { get; set; } = new List<Publication>();
 
         //Documentos

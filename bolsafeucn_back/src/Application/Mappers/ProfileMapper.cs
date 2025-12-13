@@ -2,6 +2,7 @@ using Mapster;
 using bolsafeucn_back.src.Domain.Models;
 using bolsafeucn_back.src.Application.DTOs.UserDTOs.UserProfileDTOs;
 using System.IO.Compression;
+using bolsafeucn_back.src.Application.DTOs.UserDTOs.AdminDTOs;
 
 namespace bolsafeucn_back.src.Application.Mappers
 {
@@ -17,6 +18,7 @@ namespace bolsafeucn_back.src.Application.Mappers
         {
             ConfigureViewProfileMapping();
             ConfigureUpdateMappings();
+            ConfigureAdminMappings();
         }
         /// <summary>
         /// Configura el mapeo de GeneralUser a GetUserProfileDTO para ver el perfil de usuario.
@@ -34,8 +36,7 @@ namespace bolsafeucn_back.src.Application.Mappers
                 .Map(dest => dest.Email, src => src.Email)
                 .Map(dest => dest.PhoneNumber, src => src.PhoneNumber)
                 .Map(dest => dest.AboutMe, src => src.AboutMe)
-                .Map(dest => dest.ProfilePhoto, src => src.ProfilePhoto!.Url)
-                .Map(dest => dest.ProfileBanner, src => src.ProfileBanner!.Url);
+                .Map(dest => dest.ProfilePhoto, src => src.ProfilePhoto!.Url);
 
             TypeAdapterConfig<GeneralUser, GetIndividualProfileDTO>
                 .NewConfig()
@@ -47,8 +48,7 @@ namespace bolsafeucn_back.src.Application.Mappers
                 .Map(dest => dest.Email, src => src.Email)
                 .Map(dest => dest.PhoneNumber, src => src.PhoneNumber)
                 .Map(dest => dest.AboutMe, src => src.AboutMe)
-                .Map(dest => dest.ProfilePhoto, src => src.ProfilePhoto!.Url)
-                .Map(dest => dest.ProfileBanner, src => src.ProfileBanner!.Url);
+                .Map(dest => dest.ProfilePhoto, src => src.ProfilePhoto!.Url);
 
             TypeAdapterConfig<GeneralUser, GetCompanyProfileDTO>
                 .NewConfig()
@@ -60,8 +60,7 @@ namespace bolsafeucn_back.src.Application.Mappers
                 .Map(dest => dest.Email, src => src.Email)
                 .Map(dest => dest.PhoneNumber, src => src.PhoneNumber)
                 .Map(dest => dest.AboutMe, src => src.AboutMe)
-                .Map(dest => dest.ProfilePhoto, src => src.ProfilePhoto!.Url)
-                .Map(dest => dest.ProfileBanner, src => src.ProfileBanner!.Url);
+                .Map(dest => dest.ProfilePhoto, src => src.ProfilePhoto!.Url);
 
             TypeAdapterConfig<GeneralUser, GetAdminProfileDTO>
                 .NewConfig()
@@ -72,8 +71,7 @@ namespace bolsafeucn_back.src.Application.Mappers
                 .Map(dest => dest.Email, src => src.Email)
                 .Map(dest => dest.PhoneNumber, src => src.PhoneNumber)
                 .Map(dest => dest.AboutMe, src => src.AboutMe)
-                .Map(dest => dest.ProfilePhoto, src => src.ProfilePhoto!.Url)
-                .Map(dest => dest.ProfileBanner, src => src.ProfileBanner!.Url);
+                .Map(dest => dest.ProfilePhoto, src => src.ProfilePhoto!.Url);
 
             /*TypeAdapterConfig<GeneralUser, GetUserProfileDTO>
                 .NewConfig()
@@ -152,7 +150,51 @@ namespace bolsafeucn_back.src.Application.Mappers
             .Map(dest => dest.Email, src => src.Email)
             .Map(dest => dest.AboutMe, src => src.AboutMe)
             .Map(dest => dest.PhoneNumber, src => src.PhoneNumber)
-            .Map(dest => dest.Admin!.SuperAdmin, src => src.IsSuperAdmin);
+            .Map(dest => dest.Admin!.SuperAdmin, src => src.SuperAdmin);
         }
+
+        public void ConfigureAdminMappings()
+        {
+            TypeAdapterConfig<GeneralUser, UserForAdminDTO>
+                .NewConfig()
+                .Map(dest => dest.UserName, src => src.UserName)
+                .Map(dest => dest.Email, src => src.Email)
+                .Map(dest => dest.Rut, src => src.Rut)
+                .Map(dest => dest.Rating, src => src.Rating)
+                .Map(dest => dest.UserType, src => src.UserType.ToString())
+                .Map(dest => dest.Banned, src => src.Banned);
+
+            TypeAdapterConfig<GeneralUser, UserProfileForAdminDTO>
+                .NewConfig()
+                .Map(dest => dest.Id, src => src.Id)
+                .Map(dest => dest.Username, src => src.UserName)
+                .Map(dest => dest.Email, src => src.Email)
+                .Map(dest => dest.FirstName, src =>
+                    src.Student != null ? src.Student.Name :
+                    src.Individual != null ? src.Individual.Name :
+                    src.Company != null ? src.Company.CompanyName :
+                    src.Admin != null ? src.Admin.Name :
+                    null)
+                .Map(dest => dest.LastName, src =>
+                    src.Student != null ? src.Student.LastName :
+                    src.Individual != null ? src.Individual.LastName :
+                    src.Company != null ? src.Company.LegalName :
+                    src.Admin != null ? src.Admin.LastName :
+                    null)
+                .Map(dest => dest.PhoneNumber, src => src.PhoneNumber)
+                .Map(dest => dest.Rut, src => src.Rut)
+                .Map(dest => dest.Rating, src => (float?)src.Rating)
+                .Map(dest => dest.ProfilePictureUrl, src => src.ProfilePhoto != null ? src.ProfilePhoto.Url : null)
+                .Map(dest => dest.AboutMe, src => src.AboutMe)
+                .Map(dest => dest.UserType, src => src.UserType.ToString())
+                .Map(dest => dest.Banned, src => src.Banned)
+                .Map(dest => dest.CreatedAt, src => src.CreatedAt)
+                .Map(dest => dest.UpdatedAt, src => src.UpdatedAt)
+                .Map(dest => dest.LastLoginAt, src => src.LastLoginAt)
+                .Map(dest => dest.CVUrl, src => src.Student != null ? src.Student.CurriculumVitae : null)
+                .Map(dest => dest.Disability, src => src.Student != null ? src.Student.Disability.ToString() : null)
+                .Map(dest => dest.SuperAdmin, src => src.Admin != null ? src.Admin.SuperAdmin : (bool?)null);
+        }
+
     }
 }

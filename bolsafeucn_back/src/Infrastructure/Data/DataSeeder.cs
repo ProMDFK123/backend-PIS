@@ -80,7 +80,7 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                         new Role { Name = "Admin", NormalizedName = "ADMIN" },
                         new Role { Name = "Applicant", NormalizedName = "APPLICANT" },
                         new Role { Name = "Offerent", NormalizedName = "OFFERENT" },
-                        new Role { Name = "SuperAdmin", NormalizedName = "SUPERADMIN" },
+                        new Role { Name = "SuperAdmin", NormalizedName = "SuperAdmin" },
                     };
                     foreach (var role in roles)
                     {
@@ -302,8 +302,8 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                 AboutMe = "Empresa comprometida con el cambio y progreso de sus trabajadores",
                 Rut = "76543210-K",
                 EmailConfirmed = true,
-                Banned = false,
                 Rating = 5.4,
+                Banned = false,
                 ProfilePhoto = new UserImage
                 {
                     Url =
@@ -344,8 +344,8 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                 AboutMe = "Emprendedor con 5 años de experiencia",
                 Rut = "11222333-4",
                 EmailConfirmed = true,
-                Banned = false,
                 Rating = 6.0,
+                Banned = false,
                 ProfilePhoto = new UserImage
                 {
                     Url =
@@ -460,8 +460,8 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                     AboutMe = faker.Random.Replace("##################"),
                     Rut = faker.Random.Replace("##.###.###-K"),
                     EmailConfirmed = true,
-                    Banned = faker.Random.Bool(0.3f),
                     Rating = Math.Round(faker.Random.Double(1.0, 6.0), 1),
+                    Banned = faker.Random.Bool(0.3f),
                     ProfilePhoto = new UserImage
                     {
                         Url =
@@ -504,8 +504,8 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                     AboutMe = faker.Random.Replace("##################"),
                     Rut = faker.Random.Replace("##.###.###-K"),
                     EmailConfirmed = true,
-                    Banned = faker.Random.Bool(0.3f),
                     Rating = Math.Round(faker.Random.Double(1.0, 6.0), 1),
+                    Banned = faker.Random.Bool(0.3f),
                     ProfilePhoto = new UserImage
                     {
                         Url =
@@ -545,8 +545,8 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                 Rut = faker.Random.Replace("##.###.###-K"),
                 AboutMe = faker.Random.Replace("################"),
                 EmailConfirmed = true,
-                Banned = faker.Random.Bool(0.9f),
                 Rating = Math.Round(faker.Random.Double(1.0, 6.0), 1),
+                Banned = faker.Random.Bool(0.9f),
                 ProfilePhoto = new UserImage
                 {
                     Url =

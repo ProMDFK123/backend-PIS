@@ -1,4 +1,3 @@
-using bolsafe_ucn.src.Application.Services.Interfaces;
 using bolsafeucn_back.src.Application.Infrastructure.Data;
 using bolsafeucn_back.src.Application.Mappers;
 using bolsafeucn_back.src.Application.Services.Implements;
@@ -250,8 +249,10 @@ try
     builder.Services.AddScoped<IFileRepository, FileRepository>();
     builder.Services.AddScoped<IPublicationRepository, PublicationRepository>();
     builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+    builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 
     builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<IAdminService, AdminService>();
     builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<ITokenService, TokenService>();
     builder.Services.AddScoped<IOfferService, OfferService>();
@@ -278,6 +279,7 @@ try
     // Pipeline
     // =========================
     #endregion
+
     #region Hangfire Dashboard + Recurring Jobs
     // Hangfire dashboard (solo en desarrollo)
     Console.WriteLine("[STARTUP] Verificando entorno para Hangfire Dashboard...");
@@ -328,9 +330,23 @@ try
 
     // Muy importante: primero autenticación, luego autorización
     app.UseAuthentication();
+    app.UseMiddleware<bolsafeucn_back.src.API.Middlewares.BlacklistMiddleware>(); // Middleware para validar tokens en blacklist debe ir entre auth y authorization
     Console.WriteLine("[STARTUP] ✓ Authentication middleware habilitado");
     app.UseAuthorization();
     Console.WriteLine("[STARTUP] ✓ Authorization middleware habilitado");
+    // Configuración para servir archivos estáticos desde la carpeta "uploads"
+    var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
+    if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(
+            Path.Combine(builder.Environment.ContentRootPath, "uploads")),
+        RequestPath = "/uploads",
+        OnPrepareResponse = ctx =>
+        {
+            ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=3600");
+        }
+    });
 
     app.MapControllers();
     Console.WriteLine("[STARTUP] ✓ Controllers mapeados correctamente");

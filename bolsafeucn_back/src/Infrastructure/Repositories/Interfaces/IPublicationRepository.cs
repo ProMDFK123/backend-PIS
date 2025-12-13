@@ -13,9 +13,13 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Interfaces
     /// </summary>
     public interface IPublicationRepository
     {
-        
+
         Task<IEnumerable<Publication>> GetPublishedPublicationsByUserIdAsync(string userId);
         Task<IEnumerable<Publication>> GetRejectedPublicationsByUserIdAsync(string userId);
         Task<IEnumerable<Publication>> GetPendingPublicationsByUserIdAsync(string userId);
+
+        Task<Publication?> GetByIdAsync(int id);
+
+        Task UpdateAsync(Publication publication);
     }
 }

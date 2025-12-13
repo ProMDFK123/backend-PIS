@@ -22,5 +22,11 @@ namespace bolsafeucn_back.src.Application.Services.Interfaces
         Task<IEnumerable<PublicationsDTO>> GetMyPublishedPublicationsAsync(string userId);
         Task<IEnumerable<PublicationsDTO>> GetMyRejectedPublicationsAsync(string userId);
         Task<IEnumerable<PublicationsDTO>> GetMyPendingPublicationsAsync(string userId);
+
+
+        Task<GenericResponse<string>> AdminApprovePublicationAsync(int publicationId);
+
+        Task<GenericResponse<string>> AdminRejectPublicationAsync(int publicationId, AdminRejectDto dto);
+        Task<GenericResponse<string>> AppealPublicationAsync(int publicationId, int userId, UserAppealDto dto);
     }
 }

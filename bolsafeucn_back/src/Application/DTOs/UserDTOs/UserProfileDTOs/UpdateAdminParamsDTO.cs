@@ -49,7 +49,7 @@ namespace bolsafeucn_back.src.Application.DTOs.UserDTOs.UserProfileDTOs
         [MaxLength(500, ErrorMessage = "La información sobre el usuario debe tener como máximo 500 caracteres")]
         public string? AboutMe { get; set; }
 
-        public bool IsSuperAdmin { get; set; }
+        public bool SuperAdmin { get; set; }
 
         public void ApplyTo(GeneralUser user)
         {

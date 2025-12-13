@@ -12,7 +12,7 @@ namespace bolsafeucn_back.src.Application.DTOs.UserDTOs.UserProfileDTOs
         public required string Email { get; set; }
         public required string PhoneNumber { get; set; }
         public required string AboutMe { get; set; }
+        public required bool SuperAdmin { get; set; }
         public string? ProfilePhoto { get; set; }
-        public string? ProfileBanner { get; set; }
     }
 }

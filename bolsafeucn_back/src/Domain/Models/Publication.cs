@@ -75,5 +75,21 @@ namespace bolsafeucn_back.src.Domain.Models
         /// Administrative validation status for the publication.
         /// </summary>
         public StatusValidation statusValidation { get; set; }
+        /// <summary>
+        /// Reason provided by the administrator when rejecting the publication.
+        /// This feedback allows the user to correct their publication.
+        /// </summary>
+        public string? AdminRejectionReason { get; set; }
+
+        /// <summary>
+        /// Justification provided by the user when appealing a rejection.
+        /// </summary>
+        public string? UserAppealJustification { get; set; }
+
+        /// <summary>
+        /// Counter for the number of appeal attempts made by the user.
+        /// Used to enforce the maximum appeal limit logic.
+        /// </summary>
+        public int AppealCount { get; set; } = 0;
     }
 }
