@@ -50,12 +50,14 @@ public class OfferService : IOfferService
                         ? $"{(o.User.Individual?.Name ?? "").Trim()} {(o.User.Individual?.LastName ?? "").Trim()}".Trim()
                     : (o.User?.UserName ?? "UCN");
 
+                var ownerRating = o.User?.Rating ?? 0.0f;
                 return new OfferSummaryDto
                 {
                     Id = o.Id,
                     Title = o.Title,
                     CompanyName = ownerName, // si lo sigues usando en otros lados
                     OwnerName = ownerName, // lo que consume el front para “oferente”
+                    OwnerRating = ownerRating,
 
                     Location = "Campus Antofagasta",
 
@@ -103,6 +105,7 @@ public class OfferService : IOfferService
             EndDate = offer.EndDate,
             Remuneration = (int)offer.Remuneration, // tu DTO usa int
             OfferType = offer.OfferType.ToString(),
+            statusValidation = offer.statusValidation,
         };
 
         _logger.LogInformation("Detalles de oferta ID: {OfferId} obtenidos exitosamente", offerId);
@@ -208,7 +211,8 @@ public class OfferService : IOfferService
             Location = offer.Location,
             Requirements = offer.Requirements,
             ContactInfo = offer.ContactInfo,
-            AboutMe = offer.User?.AboutMe
+            AboutMe = offer.User?.AboutMe,
+            Rating = offer.User.Rating
         };
         _logger.LogInformation("Detalles de oferta ID: {OfferId} obtenidos exitosamente", offerId);
         return result;
@@ -236,6 +240,7 @@ public class OfferService : IOfferService
         if (offer.User?.Email != null)
         {
             await _emailService.SendPublicationStatusChangeEmailAsync(
+                offer.Id,
                 offer.User.Email,
                 offer.Title,
                 "Cerrada (Finalizada)" // Estado a mostrar en el email
@@ -274,7 +279,8 @@ public class OfferService : IOfferService
             OfferType = offer.OfferType,
             ContactInfo = offer.ContactInfo,
             AboutMe = offer.User?.AboutMe,
-            Requirements = offer.Requirements
+            Requirements = offer.Requirements,
+            Rating = offer.User.Rating
         };
     }
 
@@ -298,6 +304,7 @@ public class OfferService : IOfferService
         if (offer.User?.Email != null)
         {
             await _emailService.SendPublicationStatusChangeEmailAsync(
+                offer.Id,
                 offer.User.Email,
                 offer.Title,
                 "Publicada"
@@ -325,6 +332,7 @@ public class OfferService : IOfferService
         if (offer.User?.Email != null)
         {
             await _emailService.SendPublicationStatusChangeEmailAsync(
+                offer.Id,
                 offer.User.Email,
                 offer.Title,
                 "Rechazada"
@@ -380,6 +388,51 @@ public class OfferService : IOfferService
         if (offer.User?.Email != null)
         {
             await _emailService.SendPublicationStatusChangeEmailAsync(
+                offer.Id,
+                offer.User.Email,
+                offer.Title,
+                "Cerrada (Finalizada)" // Estado a mostrar en el email
+            );
+        }
+    }
+
+    public async Task ClosePublishedOfferForOffererAsync(int offerId, int offererUserId)
+    {
+        var offer = await _offerRepository.GetByIdAsync(offerId);
+        if (offer == null)
+        {
+            throw new KeyNotFoundException($"La oferta con id {offerId} no fue encontrada.");
+        }
+        // Validar propiedad: lanzar 404 para no revelar la existencia
+        if (offer.UserId != offererUserId)
+        {
+            throw new KeyNotFoundException($"La oferta con id {offerId} no fue encontrada.");
+        }
+
+        if (!offer.IsActive)
+        {
+            throw new InvalidOperationException($"La oferta con id {offerId} ya ha sido cerrada.");
+        }
+
+        // El estado de publicación debe ser Publicado para poder cerrarse
+        if (offer.statusValidation != StatusValidation.Published)
+        {
+            throw new InvalidOperationException($"La oferta con ID {offerId} está {offer.statusValidation}. Solo las publicaciones activas pueden ser cerradas.");
+        }
+
+        offer.IsActive = false;
+        offer.statusValidation = StatusValidation.Closed;
+        await _offerRepository.UpdateOfferAsync(offer);
+
+        _logger.LogInformation(
+            "Oferta ID: {OfferId} cerrada por el oferente {OffererId}. Reviews se crearán automáticamente.",
+            offerId, offererUserId
+        );
+
+        if (offer.User?.Email != null)
+        {
+            await _emailService.SendPublicationStatusChangeEmailAsync(
+                offer.Id,
                 offer.User.Email,
                 offer.Title,
                 "Cerrada (Finalizada)" // Estado a mostrar en el email

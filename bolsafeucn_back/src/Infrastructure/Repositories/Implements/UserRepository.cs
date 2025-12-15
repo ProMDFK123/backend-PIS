@@ -423,10 +423,11 @@ namespace bolsafeucn_back.src.Infrastructure.Repositories.Implements
         /// <param name="searchParams">Parámetros de búsqueda y paginación</param>
         /// <returns>Usuarios filtrados y el conteo total</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public async Task<(IEnumerable<GeneralUser>, int TotalCount)> GetFilteredForAdminAsync(SearchParamsDTO searchParams)
+        public async Task<(IEnumerable<GeneralUser>, int TotalCount)> GetFilteredForAdminAsync(int adminId, SearchParamsDTO searchParams)
         {
             var query = _context
                 .Users
+                .Where(u => u.Id != adminId)
                 .AsNoTracking()
                 .AsQueryable();
             if (query == null)

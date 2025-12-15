@@ -13,5 +13,6 @@ namespace bolsafeucn_back.src.Application.DTOs.JobAplicationDTO
         public int Id { get; set; }
         public string Applicant { get; set; }
         public string Status { get; set; } = string.Empty;
+        public double Rating { get; set; }
     }
 }

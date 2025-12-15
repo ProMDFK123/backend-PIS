@@ -1116,6 +1116,111 @@ namespace bolsafeucn_back.src.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Cierra una oferta de trabajo activa. Solo para el dueño de la publicación.
+        /// </summary>
+        /// <param name="offerId">El ID de la oferta a cerrar.</param>
+        [HttpPatch("offerent/my-offer/{offerId}/close")]
+        [Authorize(Roles = "Offerent")]
+        public async Task<IActionResult> CloseOfferForOfferer(int offerId)
+        {
+            try
+            {
+                var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdString, out var offererUserId))
+                {
+                    return Unauthorized(
+                        new GenericResponse<object>("No autenticado o token inválido")
+                    );
+                }
+
+                await _offerService.ClosePublishedOfferForOffererAsync(offerId, offererUserId);
+
+                return Ok(
+                    new GenericResponse<object>(
+                        $"Oferta {offerId} cerrada con éxito por el oferente.",
+                        offerId
+                    )
+                );
+            }
+            catch (KeyNotFoundException)
+            {
+                // Retornar 404 si la oferta no existe o no le pertenece (por el chequeo en el servicio)
+                return NotFound(
+                    new GenericResponse<object>(
+                        "La oferta no fue encontrada o no te pertenece",
+                        null
+                    )
+                );
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new GenericResponse<object>(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cerrando oferta ID: {OfferId}", offerId);
+                return StatusCode(
+                    500,
+                    new GenericResponse<object>("Error interno al cerrar la oferta.", null)
+                );
+            }
+        }
+
+        /// <summary>
+        /// Cierra una publicación de compra/venta activa. Solo para el dueño de la publicación.
+        /// </summary>
+        /// <param name="buySellId">El ID de la publicación de compra/venta a cerrar.</param>
+        [HttpPatch("offerent/my-buysell/{buySellId}/close")]
+        [Authorize(Roles = "Offerent")]
+        public async Task<IActionResult> CloseBuySellForOfferer(int buySellId)
+        {
+            try
+            {
+                var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdString, out var offererUserId))
+                {
+                    return Unauthorized(
+                        new GenericResponse<object>("No autenticado o token inválido")
+                    );
+                }
+
+                await _buySellService.ClosePublishedBuySellForOffererAsync(
+                    buySellId,
+                    offererUserId
+                );
+
+                return Ok(
+                    new GenericResponse<object>(
+                        $"Publicación Compra/Venta {buySellId} cerrada con éxito por el oferente.",
+                        buySellId
+                    )
+                );
+            }
+            catch (KeyNotFoundException)
+            {
+                // Retornar 404 si la publicación no existe o no le pertenece (por el chequeo en el servicio)
+                return NotFound(
+                    new GenericResponse<object>(
+                        "La publicación no fue encontrada o no te pertenece",
+                        null
+                    )
+                );
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new GenericResponse<object>(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cerrando Compra/Venta ID: {BuySellId}", buySellId);
+                return StatusCode(
+                    500,
+                    new GenericResponse<object>("Error interno al cerrar la Compra/Venta.", null)
+                );
+            }
+        }
+
         #endregion
 
         #region Endpoints para Oferentes (Empresa/Particular)
@@ -1276,7 +1381,11 @@ namespace bolsafeucn_back.src.API.Controllers
         [Authorize(Roles = "Offerent")]
         public async Task<IActionResult> RejectApplication(int applicationId)
         {
-            return await UpdateApplicationStatusInternal(applicationId, ApplicationStatus.Rechazada, "rechazada");
+            return await UpdateApplicationStatusInternal(
+                applicationId,
+                ApplicationStatus.Rechazada,
+                "rechazada"
+            );
         }
 
         /// <summary>
@@ -1875,7 +1984,8 @@ namespace bolsafeucn_back.src.API.Controllers
         {
             // 1. Obtener ID del usuario desde el Token JWT (Claims)
             var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            if (userIdClaim == null) return Unauthorized(new { message = "Token inválido" });
+            if (userIdClaim == null)
+                return Unauthorized(new { message = "Token inválido" });
 
             var userId = int.Parse(userIdClaim.Value);
 

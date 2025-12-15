@@ -128,20 +128,22 @@ namespace bolsafeucn_back.src.Application.Mappers
             var reviewDto = ShowReviewDTO(review);
             var publicationDto = PublicationMapper.ToDTO(publication);
             // Ocultar datos según el tipo de usuario y el estado de la review
-            if (!reviewDto.IsCompleted && userType != UserType.Administrador)
+            var bool1 = !reviewDto.IsCompleted && userType != UserType.Administrador;
+            var bool2 = !review.HasReviewForOfferorBeenDeleted && !review.HasReviewForStudentBeenDeleted;
+            if (bool1 && bool2)
             {
                 // Si es oferente, no ha completado su review pero el estudiante si
                 if ((userType == UserType.Empresa || userType == UserType.Particular) && reviewDto.IsReviewForOfferorCompleted)
                 {
                     reviewDto.RatingForOfferor = 0;
-                    reviewDto.CommentForOfferor = "Review no completada. Ocultado datos.";
+                    reviewDto.CommentForOfferor = "No podras ver la reseña de la contraparte si aun no realizas la tuya.";
                 }
                 // Si es estudiante y no ha completado su review pero el oferente si
                 else if (userType == UserType.Estudiante && reviewDto.IsReviewForStudentCompleted)
                 {
                     // Si la Review no esta completada,
                     reviewDto.RatingForStudent = 0;
-                    reviewDto.CommentForStudent = "Review no completada. Ocultado datos.";
+                    reviewDto.CommentForStudent = "No podras ver la reseña de la contraparte si aun no realizas la tuya.";
                     reviewDto.AtTime = false;
                     reviewDto.GoodPresentation = false;
                     reviewDto.StudentHasRespectOfferor = false;
@@ -155,8 +157,8 @@ namespace bolsafeucn_back.src.Application.Mappers
         }
         public static Review DeleteReviewForOfferor(Review review)
         {
-            review.RatingForOfferor = null;
-            review.CommentForOfferor = null;
+            review.RatingForOfferor = 0;
+            review.CommentForOfferor = "Reseña eliminada.";
             review.IsReviewForOfferorCompleted = false;
             review.IsCompleted = false;
             review.HasReviewForOfferorBeenDeleted = true;
@@ -165,8 +167,8 @@ namespace bolsafeucn_back.src.Application.Mappers
         }
         public static Review DeleteReviewForStudent(Review review)
         {
-            review.RatingForStudent = null;
-            review.CommentForStudent = null;
+            review.RatingForStudent = 0;
+            review.CommentForStudent = "Reseña eliminada.";
             review.ReviewChecklistValues.AtTime = false;
             review.ReviewChecklistValues.GoodPresentation = false;
             review.ReviewChecklistValues.StudentHasRespectOfferor = false;

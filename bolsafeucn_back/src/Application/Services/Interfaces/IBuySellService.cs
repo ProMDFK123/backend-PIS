@@ -44,5 +44,12 @@ namespace bolsafeucn_back.src.Application.Services.Interfaces
         /// <returns></returns>
         Task GetBuySellForAdminToReject(int buySellId);
         Task ClosePublishedBuySellAsync(int buySellId);
+
+        /// <summary>
+        /// Cierra (desactiva) una publicación de compra/venta. Solo el propietario puede usarlo.
+        /// </summary>
+        /// <param name="buySellId">Identificador de la publicación.</param>
+        /// <param name="offererUserId">Identificador del usuario oferente (propietario).</param>
+        Task ClosePublishedBuySellForOffererAsync(int buySellId, int offererUserId);
     }
 }

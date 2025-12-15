@@ -1,4 +1,5 @@
 namespace bolsafeucn_back.src.Application.DTOs.OfferDTOs;
+
 using bolsafeucn_back.src.Domain.Models;
 /// <summary>
 /// DTO representing a compact summary of an offer used in listings.
@@ -49,6 +50,7 @@ public class OfferSummaryDto
     /// Formatted owner name (optional convenience field).
     /// </summary>
     public string OwnerName { get; set; } = "UCN";
+    public double OwnerRating { get; set; }
 }
 
 /// <summary>
@@ -100,4 +102,6 @@ public class OfferDetailDto
     /// Offer type as a string (e.g., "Trabajo", "Voluntariado").
     /// </summary>
     public required string OfferType { get; set; }
+
+    public required StatusValidation statusValidation { get; set; }
 }

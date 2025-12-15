@@ -63,6 +63,7 @@ namespace bolsafeucn_back.src.Application.Services.Interfaces
         /// <param name="publicationTitle">Publication title.</param>
         /// <param name="newStatus">New status text (e.g., Publicada, Rechazada).</param>
         Task<bool> SendPublicationStatusChangeEmailAsync(
+            int? publicationId,
             string recipientEmail,
             string publicationTitle,
             string newStatus

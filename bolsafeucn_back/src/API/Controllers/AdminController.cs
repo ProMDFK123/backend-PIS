@@ -20,9 +20,9 @@ namespace bolsafeucn_back.src.API.Controllers
         /// Alterna el estado de bloqueo de un usuario.
         /// </summary>
         /// <returns>Respuesta genérica indicando el resultado de la operación.</returns>
-        [HttpPatch("users/toggle-block/{userId}")]
+        [HttpPatch("users/{userId}/toggle-block")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> ToggleUserBlockedStatus([FromRoute] int userId)
+        public async Task<IActionResult> ToggleUserBlockedStatus(int userId)
         {
             var adminId = GetUserIdFromToken();
             Log.Information($"Intentando alternar el estado de bloqueo del usuario con ID {userId}");
@@ -37,7 +37,7 @@ namespace bolsafeucn_back.src.API.Controllers
         /// <returns>Lista paginada y filtrada de usuarios.</returns>
         [HttpGet("users")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAllUsers([FromForm] SearchParamsDTO searchParams)
+        public async Task<IActionResult> GetAllUsers([FromQuery] SearchParamsDTO searchParams)
         {
             var adminId = GetUserIdFromToken();
             Log.Information("Obteniendo todos los usuarios.");
@@ -47,7 +47,7 @@ namespace bolsafeucn_back.src.API.Controllers
 
         [HttpGet("users/{userId}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetUserProfileById([FromRoute] int userId)
+        public async Task<IActionResult> GetUserProfileById(int userId)
         {
             var adminId = GetUserIdFromToken();
             Log.Information($"Obteniendo perfil de usuario con ID {userId}");

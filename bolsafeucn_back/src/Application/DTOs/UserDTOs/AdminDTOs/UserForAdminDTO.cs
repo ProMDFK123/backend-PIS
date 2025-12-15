@@ -2,6 +2,7 @@ namespace bolsafeucn_back.src.Application.DTOs.UserDTOs.AdminDTOs
 {
     public class UserForAdminDTO
     {
+        public required int Id { get; set; }
         public required string UserName { get; set; }
         public required string Email { get; set; }
         public required string Rut { get; set; }

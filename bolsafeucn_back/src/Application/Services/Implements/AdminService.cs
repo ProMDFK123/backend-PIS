@@ -121,7 +121,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                 throw new UnauthorizedAccessException("El usuario no tiene permisos de administrador.");
             }
             // Validar y ajustar parámetros de paginación
-            var (allUsers, totalCount) = await _userRepository.GetFilteredForAdminAsync(searchParams);
+            var (allUsers, totalCount) = await _userRepository.GetFilteredForAdminAsync(adminId, searchParams);
             if (allUsers == null)
             {
                 Log.Error("Error al obtener la lista de usuarios para el administrador.");

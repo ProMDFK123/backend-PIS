@@ -81,4 +81,11 @@ public interface IOfferService
     Task GetOfferForAdminToReject(int id);
     Task<OfferDetailDto> GetOfferDetailForOfferer(int id, string userId);
     Task ClosePublishedOfferAsync(int offerId);
+
+    /// <summary>
+    /// Cierra (desactiva) una oferta publicada. Solo el propietario puede usarlo.
+    /// </summary>
+    /// <param name="offerId">Identificador de la oferta.</param>
+    /// <param name="offererUserId">Identificador del usuario oferente (propietario).</param>
+    Task ClosePublishedOfferForOffererAsync(int offerId, int offererUserId);
 }

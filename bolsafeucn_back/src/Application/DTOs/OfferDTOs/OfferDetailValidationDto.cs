@@ -55,6 +55,7 @@ namespace bolsafeucn_back.src.Application.DTOs.OfferDTOs
         public string Requirements { get; set; }
         public string ContactInfo { get; set; }
         public string AboutMe { get; set; }
+        public double Rating { get; set; }
 
     }
 }

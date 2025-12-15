@@ -335,6 +335,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                     Id = app.Id,
                     Applicant = $"{app.Student.Student?.Name} {app.Student.Student?.LastName}",
                     Status = app.Status.ToString(),
+                    Rating = app.Student.Rating
                 })
                 .ToList();
         }
@@ -393,6 +394,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                     ApplicationDate = app.ApplicationDate,
                     // Enviamos el link del CV directamente
                     CurriculumVitaeUrl = app.Student.Student?.CurriculumVitae,
+                    Rating = app.Student.Rating
                 })
                 .ToList();
 
@@ -404,41 +406,40 @@ namespace bolsafeucn_back.src.Application.Services.Implements
         public async Task<ViewApplicantUserDetailDto> GetApplicantDetailForOfferer(
             int studentId,
             int offerId,
-            int offererUserId
+        int offererUserId
         )
         {
             var offer = await _offerRepository.GetByIdAsync(offerId);
             if (offer == null)
-            {
-                throw new KeyNotFoundException($"La oferta con id {offerId} no fue encontrada.");
-            }
+                throw new KeyNotFoundException($"Oferta {offerId} no encontrada.");
 
-
-
-            // Comprueba que el ID del usuario de la oferta (offer.UserId)
-            // sea el mismo que el ID del usuario logueado (offererUserId).
             if (offer.UserId != offererUserId)
+                throw new UnauthorizedAccessException("No eres el dueño de esta oferta.");
+
+            var applicationsList = await _jobApplicationRepository.GetByStudentIdAsync(studentId);
+
+            var applicant = applicationsList
+                .FirstOrDefault(app => app.JobOfferId == offerId);
+
+            if (applicant == null)
             {
-                throw new UnauthorizedAccessException(
-                    "No tienes permiso para ver los postulantes de esta oferta, ya que no eres el propietario."
-                );
+                throw new KeyNotFoundException("Este estudiante no ha postulado a esta oferta específica.");
             }
 
-            var applicant = await _jobApplicationRepository.GetByStudentIdAsync(studentId);
-            var applicantDto = new ViewApplicantUserDetailDto
+            return new ViewApplicantUserDetailDto
             {
-                Name =
-                    $"{applicant.First().Student.Student.Name} {applicant.First().Student.Student.LastName}",
-                Email = applicant.First().Student.Email,
-                Phone = applicant.First().Student.PhoneNumber,
-                Rut = applicant.First().Student.Rut,
-                Rating = (float?)applicant.First().Student.Rating, // hola soy matias cambie el rating a generaluser
-                MotivationLetter = applicant.First().Student.Student?.MotivationLetter,
-                Disability = applicant.First().Student.Student?.Disability.ToString(),
-                CurriculumVitae = applicant.First().Student.Student?.CurriculumVitae,
+                Id = applicant.Id,
+                StudentName =
+                    $"{applicant.Student.Student?.Name} {applicant.Student.Student?.LastName}",
+                Email = applicant.Student.Email,
+                PhoneNumber = applicant.Student.PhoneNumber,
+                Status = applicant.Status.ToString(),
+                CurriculumVitae = applicant.Student.Student?.CurriculumVitae,
+                Rating = (float?)applicant.Student.Rating,
+                MotivationLetter = applicant.Student.Student?.MotivationLetter,
+                Disability = applicant.Student.Student?.Disability.ToString(),
+                ProfilePicture = applicant.Student.ProfilePhoto?.Url
             };
-
-            return applicantDto;
         }
     }
 }

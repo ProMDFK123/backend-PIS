@@ -1546,10 +1546,108 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                 Log.Information("DataSeeder: 4 reviews pendientes creadas para estudiante2@alumnos.ucn.cl");
             }
 
+            // REVIEWS ADICIONALES PARA EMPRESA@TECHCORP.CL (userId=3, publicacionId=60)
+            // 4 estudiantes distintos, ninguna completada por el oferente, 2 completadas por estudiantes
+            var empresaTechCorp = await context.Users.FirstOrDefaultAsync(u => u.Email == "empresa@techcorp.cl");
+            var publicacion60 = await context.Publications.FirstOrDefaultAsync(p => p.Id == 60);
+            var estudiantesAleatorios = await context.Users
+                .Where(u => u.UserType == UserType.Estudiante && u.Email != "estudiante@alumnos.ucn.cl" && u.Email != "estudiante2@alumnos.ucn.cl")
+                .Take(4)
+                .ToListAsync();
+
+            if (empresaTechCorp != null && publicacion60 != null && estudiantesAleatorios.Count >= 4)
+            {
+                // Review 1: Estudiante SÍ completó su evaluación, Oferente NO
+                reviews.Add(new Review
+                {
+                    StudentId = estudiantesAleatorios[0].Id,
+                    Student = estudiantesAleatorios[0],
+                    OfferorId = empresaTechCorp.Id,
+                    Offeror = empresaTechCorp,
+                    PublicationId = 60,
+                    Publication = publicacion60,
+                    RatingForStudent = null,
+                    CommentForStudent = null,
+                    ReviewChecklistValues = new ReviewChecklistValues { AtTime = false, GoodPresentation = false, StudentHasRespectOfferor = false },
+                    IsReviewForStudentCompleted = false,
+                    RatingForOfferor = 5,
+                    CommentForOfferor = "Excelente experiencia laboral, ambiente muy profesional y buena comunicación.",
+                    IsReviewForOfferorCompleted = true,
+                    IsCompleted = false,
+                    HasReviewForStudentBeenDeleted = false,
+                    HasReviewForOfferorBeenDeleted = false,
+                });
+
+                // Review 2: Estudiante SÍ completó su evaluación, Oferente NO
+                reviews.Add(new Review
+                {
+                    StudentId = estudiantesAleatorios[1].Id,
+                    Student = estudiantesAleatorios[1],
+                    OfferorId = empresaTechCorp.Id,
+                    Offeror = empresaTechCorp,
+                    PublicationId = 60,
+                    Publication = publicacion60,
+                    RatingForStudent = null,
+                    CommentForStudent = null,
+                    ReviewChecklistValues = new ReviewChecklistValues { AtTime = false, GoodPresentation = false, StudentHasRespectOfferor = false },
+                    IsReviewForStudentCompleted = false,
+                    RatingForOfferor = 6,
+                    CommentForOfferor = "Muy buena empresa para trabajar, aprendí mucho y el equipo es muy colaborativo.",
+                    IsReviewForOfferorCompleted = true,
+                    IsCompleted = false,
+                    HasReviewForStudentBeenDeleted = false,
+                    HasReviewForOfferorBeenDeleted = false,
+                });
+
+                // Review 3: Estudiante NO completó su evaluación, Oferente NO
+                reviews.Add(new Review
+                {
+                    StudentId = estudiantesAleatorios[2].Id,
+                    Student = estudiantesAleatorios[2],
+                    OfferorId = empresaTechCorp.Id,
+                    Offeror = empresaTechCorp,
+                    PublicationId = 60,
+                    Publication = publicacion60,
+                    RatingForStudent = null,
+                    CommentForStudent = null,
+                    ReviewChecklistValues = new ReviewChecklistValues { AtTime = false, GoodPresentation = false, StudentHasRespectOfferor = false },
+                    IsReviewForStudentCompleted = false,
+                    RatingForOfferor = null,
+                    CommentForOfferor = null,
+                    IsReviewForOfferorCompleted = false,
+                    IsCompleted = false,
+                    HasReviewForStudentBeenDeleted = false,
+                    HasReviewForOfferorBeenDeleted = false,
+                });
+
+                // Review 4: Estudiante NO completó su evaluación, Oferente NO
+                reviews.Add(new Review
+                {
+                    StudentId = estudiantesAleatorios[3].Id,
+                    Student = estudiantesAleatorios[3],
+                    OfferorId = empresaTechCorp.Id,
+                    Offeror = empresaTechCorp,
+                    PublicationId = 60,
+                    Publication = publicacion60,
+                    RatingForStudent = null,
+                    CommentForStudent = null,
+                    ReviewChecklistValues = new ReviewChecklistValues { AtTime = false, GoodPresentation = false, StudentHasRespectOfferor = false },
+                    IsReviewForStudentCompleted = false,
+                    RatingForOfferor = null,
+                    CommentForOfferor = null,
+                    IsReviewForOfferorCompleted = false,
+                    IsCompleted = false,
+                    HasReviewForStudentBeenDeleted = false,
+                    HasReviewForOfferorBeenDeleted = false,
+                });
+
+                Log.Information("DataSeeder: 4 reviews adicionales creadas para empresa@techcorp.cl en publicación 60");
+            }
+
             await context.Reviews.AddRangeAsync(reviews);
             await context.SaveChangesAsync();
             Log.Information(
-                "DataSeeder: {Count} reviews creadas exitosamente (6 completas, 8 incompletas - 4 para estudiante2)",
+                "DataSeeder: {Count} reviews creadas exitosamente (6 completas, 12 incompletas - 4 para estudiante2, 4 para empresa@techcorp.cl)",
                 reviews.Count
             );
 
