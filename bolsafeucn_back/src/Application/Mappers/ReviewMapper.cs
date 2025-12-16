@@ -120,7 +120,8 @@ namespace bolsafeucn_back.src.Application.Mappers
                 IsReviewForStudentCompleted = entity.IsReviewForStudentCompleted,
                 IsReviewForOfferorCompleted = entity.IsReviewForOfferorCompleted,
                 HasReviewForOfferorBeenDeleted = entity.HasReviewForOfferorBeenDeleted,
-                HasReviewForStudentBeenDeleted = entity.HasReviewForStudentBeenDeleted
+                HasReviewForStudentBeenDeleted = entity.HasReviewForStudentBeenDeleted,
+                IsClosed = entity.IsClosed
             };
         }
         public static PublicationAndReviewInfoDTO MapToPublicationAndReviewInfoDTO(Review review, Publication publication, UserType userType)
@@ -128,7 +129,7 @@ namespace bolsafeucn_back.src.Application.Mappers
             var reviewDto = ShowReviewDTO(review);
             var publicationDto = PublicationMapper.ToDTO(publication);
             // Ocultar datos según el tipo de usuario y el estado de la review
-            var bool1 = !reviewDto.IsCompleted && userType != UserType.Administrador;
+            var bool1 = !reviewDto.IsClosed && userType != UserType.Administrador;
             var bool2 = !review.HasReviewForOfferorBeenDeleted && !review.HasReviewForStudentBeenDeleted;
             if (bool1 && bool2)
             {

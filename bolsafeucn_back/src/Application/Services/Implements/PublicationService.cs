@@ -74,6 +74,9 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             var pendingReviewsCount = await _reviewService.GetPendingReviewsCountAsync(
                 currentUser.Id
             );
+            Console.WriteLine(
+                $"Reseñas pendientes para el usuario {currentUser.Id}: {pendingReviewsCount}"
+            );
             if (pendingReviewsCount >= 3)
             {
                 _logger.LogWarning(
@@ -81,10 +84,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                     currentUser.Id,
                     pendingReviewsCount
                 );
-                return new GenericResponse<string>(
-                    "No puedes crear una publicación de compra/venta mientras tengas 3 o más reseñas pendientes de revisión.",
-                    null
-                );
+                throw new InvalidOperationException("No puedes crear una oferta mientras tengas 3 o más reseñas pendientes de revisión.");
             }
             try
             {
@@ -121,6 +121,16 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                     "Oferta creada exitosamente",
                     $"Oferta ID: {createdOffer.Id}"
                 );
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Error de validación al crear oferta para el usuario {UserId}: {ErrorMessage}",
+                    currentUser.Id,
+                    ex.Message
+                );
+                return new GenericResponse<string>($"Error al crear la oferta: {ex.Message}", null);
             }
             catch (Exception ex)
             {
@@ -163,10 +173,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                     currentUser.Id,
                     pendingReviewsCount
                 );
-                return new GenericResponse<string>(
-                    "No puedes crear una publicación de compra/venta mientras tengas 3 o más reseñas pendientes de revisión.",
-                    null
-                );
+                throw new InvalidOperationException("No puedes crear una publicación de compra/venta mientras tengas 3 o más reseñas pendientes de revisión.");
             }
             try
             {
@@ -198,6 +205,19 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                 return new GenericResponse<string>(
                     "Publicación de compra/venta creada exitosamente",
                     $"Publicación ID: {createdBuySell.Id}"
+                );
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Error de validación al crear publicación de compra/venta para el usuario {UserId}: {ErrorMessage}",
+                    currentUser.Id,
+                    ex.Message
+                );
+                return new GenericResponse<string>(
+                    $"Error al crear la publicación de compra/venta: {ex.Message}",
+                    null
                 );
             }
             catch (Exception ex)

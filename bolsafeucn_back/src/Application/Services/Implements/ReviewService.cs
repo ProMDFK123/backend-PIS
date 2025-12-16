@@ -256,6 +256,7 @@ namespace bolsafeucn_back.src.Application.Services.Implements
         /// <param name="review">La reseña que ha sido completada por ambas partes.</param>
         public async Task BothReviewsCompletedAsync(Review review)
         {
+            review.IsClosed = true;
             // Actualizar el Rating del oferente y del estudiante
             await UpdateUserRatingAsync(review.OfferorId);
             await UpdateUserRatingAsync(review.StudentId);
