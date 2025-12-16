@@ -51,7 +51,7 @@ namespace bolsafeucn_back.src.Application.Services.Interfaces
         /// <param name="registerAdminDTO">Datos para registrar un administrador</param>
         /// <param name="httpContext">Contexto HTTP</param>
         /// <returns>Mensaje de resultado del registro</returns>
-        Task<string> RegisterAdminAsync(RegisterAdminDTO registerAdminDTO, HttpContext httpContext);
+        Task<string> RegisterAdminAsync(int adminId, RegisterAdminDTO registerAdminDTO, HttpContext httpContext);
         /// <summary>
         /// Verifica el correo electrónico de un usuario.
         /// </summary>

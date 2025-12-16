@@ -1,6 +1,7 @@
 using System.Security;
 using System.Text.Json;
 using bolsafeucn_back.src.Application.DTOs.BaseResponse;
+using bolsafeucn_back.src.Application.Services.Implements;
 using Serilog;
 
 namespace bolsafeucn_back.src.API.Middlewares.ErrorHandlingMiddleware;
@@ -84,6 +85,7 @@ public class ErrorHandlingMiddleware(RequestDelegate next)
                 StatusCodes.Status409Conflict,
                 "Conflicto de operación"
             ),
+            EmailNotVerifiedException _ => (StatusCodes.Status403Forbidden, "Email no verificado"),
             FormatException _ => (StatusCodes.Status400BadRequest, "Formato inválido"),
             SecurityException _ => (StatusCodes.Status403Forbidden, "Acceso prohibido"),
             ArgumentOutOfRangeException _ => (

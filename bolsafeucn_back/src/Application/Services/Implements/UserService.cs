@@ -377,10 +377,22 @@ namespace bolsafeucn_back.src.Application.Services.Implements
         /// <param name="httpContext">Contexto HTTP</param>
         /// <returns>Mensaje de éxito o error</returns>
         public async Task<string> RegisterAdminAsync(
+            int adminId,
             RegisterAdminDTO registerAdminDTO,
             HttpContext httpContext
         )
         {
+            Log.Information($"Verificando permisos del admin con ID: {adminId}");
+            var requestingAdmin = await _userRepository.GetUntrackedWithTypeAsync(adminId, UserType.Administrador);
+            if (requestingAdmin == null)
+            {
+                Log.Error($"No se encontro usuario con ID: {adminId}");
+                throw new UnauthorizedAccessException("No se encontro usuario.");
+            } else if (requestingAdmin.Admin == null) {
+                Log.Error($"El usuario con ID: {adminId} no es administrador.");
+                throw new UnauthorizedAccessException("El usuario no es administrador.");
+            }
+
             Log.Information(
                 "Iniciando registro de admin con email: {Email}, SuperAdmin: {SuperAdmin}",
                 registerAdminDTO.Email,
@@ -413,24 +425,13 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                 PublicId = _configuration.GetValue<string>("Images:DefaultUserImagePublicId")!,
                 ImageType = UserImageType.Banner
             };
-            var banner = new UserImage()
-            {
-                Url = _configuration.GetValue<string>("Images:DefaultBannerImageUrl")!,
-                PublicId = _configuration.GetValue<string>("Images:DefaultBannerImagePublicId")!,
-                ImageType = UserImageType.Perfil
-            };
+
             await _fileRepository.CreateUserImageAsync(profile);
-            await _fileRepository.CreateUserImageAsync(banner);
             user.ProfilePhoto = profile;
             user.ProfilePhotoId = profile.Id;
-            user.ProfileBanner = banner;
-            user.ProfileBannerId = banner.Id;
 
             string role = "Admin";
-            if (registerAdminDTO.SuperAdmin)
-            {
-                role = "SuperAdmin";
-            }
+                
             var result = await _userRepository.CreateUserAsync(
                 user,
                 registerAdminDTO.Password,
@@ -446,7 +447,8 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             }
             var admin = registerAdminDTO.Adapt<Admin>();
             admin.GeneralUserId = user.Id;
-            result = await _userRepository.CreateAdminAsync(admin, registerAdminDTO.SuperAdmin);
+            admin.SuperAdmin = requestingAdmin.Admin.SuperAdmin ? registerAdminDTO.SuperAdmin : false;
+            result = await _userRepository.CreateAdminAsync(admin, admin.SuperAdmin);
             if (!result)
             {
                 Log.Error("Error al crear perfil de admin para usuario ID: {UserId}", user.Id);
@@ -736,8 +738,8 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                 Log.Warning(
                     $"Intento de login con email no verificado: {user.Email}, UserId: {user.Id}"
                 );
-                throw new UnauthorizedAccessException(
-                    "Por favor, verifica tu correo electrónico antes de iniciar sesión."
+                throw new EmailNotVerifiedException(
+                    user.Email!
                 );
             }
             var result = await _userRepository.CheckPasswordAsync(user, loginDTO.Password);
@@ -1192,5 +1194,15 @@ namespace bolsafeucn_back.src.Application.Services.Implements
         }
 
         #endregion
+    }
+
+    [Serializable]
+    internal class EmailNotVerifiedException : Exception
+    {
+        public string Email {get;}
+        public EmailNotVerifiedException(string email) : base(email)
+        {
+            Email = email;
+        }
     }
 }

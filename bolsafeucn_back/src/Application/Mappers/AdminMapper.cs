@@ -27,7 +27,7 @@ namespace bolsafeucn_back.src.Application.Mappers
                 .NewConfig()
                 .Map(dest => dest.Name, src => src.Name)
                 .Map(dest => dest.LastName, src => src.LastName)
-                .Map(dest => dest.SuperAdmin, src => src.SuperAdmin);
+                .Ignore(dest => dest.SuperAdmin);
         }
     }
 }

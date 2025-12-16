@@ -411,7 +411,7 @@ namespace bolsafeucn_back.src.Application.Infrastructure.Data
                     GeneralUserId = testAdminUser.Id,
                     Name = "Admin",
                     LastName = "Admin Sistema",
-                    SuperAdmin = false,
+                    SuperAdmin = true,
                     GeneralUser = testAdminUser,
                 };
                 context.Admins.Add(testAdmin);

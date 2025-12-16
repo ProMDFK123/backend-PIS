@@ -2,6 +2,7 @@ using bolsafeucn_back.src.Application.DTOs.AuthDTOs;
 using bolsafeucn_back.src.Application.DTOs.AuthDTOs.ResetPasswordDTOs;
 using bolsafeucn_back.src.Application.DTOs.BaseResponse;
 using bolsafeucn_back.src.Application.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
@@ -55,13 +56,15 @@ namespace bolsafeucn_back.src.API.Controllers
         }
 
         [HttpPost("register/admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Register([FromBody] RegisterAdminDTO registerAdminDTO)
         {
+            var adminId = GetUserIdFromToken();
             Log.Information(
                 "Endpoint: POST /api/auth/register/admin - Intentando registrar admin con email: {Email}",
                 registerAdminDTO.Email
             );
-            var message = await _service.RegisterAdminAsync(registerAdminDTO, HttpContext);
+            var message = await _service.RegisterAdminAsync(adminId, registerAdminDTO, HttpContext);
             return Ok(new GenericResponse<string>("Registro de admin exitoso", message));
         }
 

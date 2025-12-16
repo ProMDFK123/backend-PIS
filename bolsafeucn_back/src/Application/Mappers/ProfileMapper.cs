@@ -71,7 +71,8 @@ namespace bolsafeucn_back.src.Application.Mappers
                 .Map(dest => dest.Email, src => src.Email)
                 .Map(dest => dest.PhoneNumber, src => src.PhoneNumber)
                 .Map(dest => dest.AboutMe, src => src.AboutMe)
-                .Map(dest => dest.ProfilePhoto, src => src.ProfilePhoto!.Url);
+                .Map(dest => dest.ProfilePhoto, src => src.ProfilePhoto!.Url)
+                .Map(dest => dest.SuperAdmin, src => src.Admin!.SuperAdmin);
 
             /*TypeAdapterConfig<GeneralUser, GetUserProfileDTO>
                 .NewConfig()
