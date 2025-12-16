@@ -1,6 +1,5 @@
 using bolsafeucn_back.src.Application.DTOs.ReviewDTO;
 using bolsafeucn_back.src.Domain.Models;
-using bolsafeucn_back.src.Infrastructure.Repositories.Implements;
 using Serilog;
 
 namespace bolsafeucn_back.src.Application.Mappers
@@ -137,14 +136,14 @@ namespace bolsafeucn_back.src.Application.Mappers
                 if ((userType == UserType.Empresa || userType == UserType.Particular) && reviewDto.IsReviewForOfferorCompleted)
                 {
                     reviewDto.RatingForOfferor = 0;
-                    reviewDto.CommentForOfferor = "No podras ver la reseña de la contraparte si aun no realizas la tuya.";
+                    reviewDto.CommentForOfferor = "No podrás ver la reseña de la contraparte si aún no realizas la tuya.";
                 }
                 // Si es estudiante y no ha completado su review pero el oferente si
                 else if (userType == UserType.Estudiante && reviewDto.IsReviewForStudentCompleted)
                 {
                     // Si la Review no esta completada,
                     reviewDto.RatingForStudent = 0;
-                    reviewDto.CommentForStudent = "No podras ver la reseña de la contraparte si aun no realizas la tuya.";
+                    reviewDto.CommentForStudent = "No podrás ver la reseña de la contraparte si aún no realizas la tuya.";
                     reviewDto.AtTime = false;
                     reviewDto.GoodPresentation = false;
                     reviewDto.StudentHasRespectOfferor = false;

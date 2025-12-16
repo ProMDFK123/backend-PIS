@@ -18,6 +18,7 @@ public class PublicationRepository : IPublicationRepository
         _context = context;
     }
 
+
     public async Task<IEnumerable<Publication>> GetPublishedPublicationsByUserIdAsync(string userId)
     {
         return await _context
@@ -52,8 +53,7 @@ public class PublicationRepository : IPublicationRepository
 
     public async Task<Publication?> GetByIdAsync(int id)
     {
-        return await _context.Publications
-            .FirstOrDefaultAsync(p => p.Id == id);
+        return await _context.Publications.FirstOrDefaultAsync(p => p.Id == id);
     }
 
     // --- NUEVA IMPLEMENTACIÓN: UpdateAsync ---

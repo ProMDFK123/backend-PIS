@@ -167,6 +167,45 @@ namespace bolsafeucn_back.src.API.Controllers
 
         #endregion
 
+        #region Obtener ofertas y compra/venta de administración (admin)
+        [Authorize(Roles = "Admin")]
+        [HttpGet("admin/my-published")]
+        public async Task<IActionResult> GetAllPublicationsForAdmin()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (userId == null)
+                {
+                    _logger.LogWarning("Usuario no autenticado intentando obtener publicaciones");
+                    return Unauthorized(new GenericResponse<object>("Usuario no autenticado"));
+                }
+
+                var publicationsDto = await _publicationService.GetMyPublishedPublicationsAsync(
+                    userId
+                );
+
+                return Ok(
+                    new GenericResponse<IEnumerable<PublicationsDTO>>(
+                        "Ofertas Publicadas obtenidas",
+                        publicationsDto
+                    )
+                );
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Recurso no encontrado");
+                return NotFound(new GenericResponse<object>(ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Operación inválida");
+                return Conflict(new GenericResponse<object>(ex.Message));
+            }
+        }
+        #endregion
+
         #region Administra buysells Admin
 
         /// <summary>

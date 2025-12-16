@@ -88,6 +88,8 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             }
             try
             {
+                var isAdmin = currentUser.UserType == UserType.Administrador;
+
                 var offer = new Offer
                 {
                     Title = offerDTO.Title,
@@ -104,8 +106,12 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                     UserId = currentUser.Id,
                     User = currentUser,
                     Type = Types.Offer,
-                    statusValidation = StatusValidation.InProcess,
-                    IsActive = false,
+
+                    statusValidation = isAdmin
+                        ? StatusValidation.Published
+                        : StatusValidation.InProcess,
+
+                    IsActive = isAdmin,
                 };
 
                 var createdOffer = await _offerRepository.CreateOfferAsync(offer);
@@ -177,6 +183,8 @@ namespace bolsafeucn_back.src.Application.Services.Implements
             }
             try
             {
+                var isAdmin = currentUser.UserType == UserType.Administrador;
+
                 var buySell = new BuySell
                 {
                     Title = buySellDTO.Title,
@@ -189,8 +197,12 @@ namespace bolsafeucn_back.src.Application.Services.Implements
                     Location = buySellDTO.Location,
                     ContactInfo = buySellDTO.ContactInfo,
                     PublicationDate = DateTime.UtcNow,
-                    statusValidation = StatusValidation.InProcess,
-                    IsActive = false,
+
+                    statusValidation = isAdmin
+                        ? StatusValidation.Published
+                        : StatusValidation.InProcess,
+
+                    IsActive = isAdmin,
                 };
 
                 var createdBuySell = await _buySellRepository.CreateBuySellAsync(buySell);

@@ -14,6 +14,7 @@ namespace bolsafeucn_back.src.Application.Services.Interfaces
             CreateBuySellDTO publicationDTO,
             GeneralUser currentUser
         );
+
         /// <summary>
         /// Funcion
         /// </summary>
@@ -23,10 +24,16 @@ namespace bolsafeucn_back.src.Application.Services.Interfaces
         Task<IEnumerable<PublicationsDTO>> GetMyRejectedPublicationsAsync(string userId);
         Task<IEnumerable<PublicationsDTO>> GetMyPendingPublicationsAsync(string userId);
 
-
         Task<GenericResponse<string>> AdminApprovePublicationAsync(int publicationId);
 
-        Task<GenericResponse<string>> AdminRejectPublicationAsync(int publicationId, AdminRejectDto dto);
-        Task<GenericResponse<string>> AppealPublicationAsync(int publicationId, int userId, UserAppealDto dto);
+        Task<GenericResponse<string>> AdminRejectPublicationAsync(
+            int publicationId,
+            AdminRejectDto dto
+        );
+        Task<GenericResponse<string>> AppealPublicationAsync(
+            int publicationId,
+            int userId,
+            UserAppealDto dto
+        );
     }
 }
