@@ -204,6 +204,11 @@ namespace bolsafeucn_back.src.API.Controllers
                 return Conflict(new GenericResponse<object>(ex.Message));
             }
         }
+
+        /// <summary>
+        /// Obtiene todas las ofertas publicadas solo disponibles para admin
+        [Authorize(Roles = "Admin")]
+        [HttpGet("admin/my-published/buysells")]
         #endregion
 
         #region Administra buysells Admin
@@ -957,7 +962,7 @@ namespace bolsafeucn_back.src.API.Controllers
         /// Obtiene todas las publicaciones PUBLICADAS del particular/empresa autenticado.
         /// </summary>
         [HttpGet("offerent/my-published")]
-        [Authorize(Roles = "Offerent")]
+        [Authorize(Roles = "Offerent,Admin")]
         public async Task<IActionResult> GetMyPublishedPublications()
         {
             try
@@ -1080,7 +1085,7 @@ namespace bolsafeucn_back.src.API.Controllers
         }
 
         [HttpGet("offerent/offer/{id:int}")]
-        [Authorize(Roles = "Offerent")]
+        [Authorize(Roles = "Offerent,Admin")]
         public async Task<IActionResult> GetOfferDetail(int id)
         {
             try
@@ -1118,7 +1123,7 @@ namespace bolsafeucn_back.src.API.Controllers
         /// Obtiene el detalle de una publicación de Compra/Venta por su ID.
         /// </summary>
         [HttpGet("offerent/buysell/{id:int}")]
-        [Authorize(Roles = "Offerent")]
+        [Authorize(Roles = "Offerent,Admin")]
         public async Task<IActionResult> GetBuySellDetail(int id)
         {
             try
@@ -1160,7 +1165,7 @@ namespace bolsafeucn_back.src.API.Controllers
         /// </summary>
         /// <param name="offerId">El ID de la oferta a cerrar.</param>
         [HttpPatch("offerent/my-offer/{offerId}/close")]
-        [Authorize(Roles = "Offerent")]
+        [Authorize(Roles = "Offerent,Admin")]
         public async Task<IActionResult> CloseOfferForOfferer(int offerId)
         {
             try
@@ -1211,7 +1216,7 @@ namespace bolsafeucn_back.src.API.Controllers
         /// </summary>
         /// <param name="buySellId">El ID de la publicación de compra/venta a cerrar.</param>
         [HttpPatch("offerent/my-buysell/{buySellId}/close")]
-        [Authorize(Roles = "Offerent")]
+        [Authorize(Roles = "Offerent,Admin")]
         public async Task<IActionResult> CloseBuySellForOfferer(int buySellId)
         {
             try
@@ -1271,7 +1276,7 @@ namespace bolsafeucn_back.src.API.Controllers
         /// <param name="offerId">El ID de la oferta</param>
         /// <returns>Una lista de los postulantes de la oferta</returns>
         [HttpGet("offerent/my-offer/{offerId}/applicants")] // <-- 1. RUTA CORREGIDA (para no chocar con la del Admin)
-        [Authorize(Roles = "Offerent")]
+        [Authorize(Roles = "Offerent,Admin")]
         public async Task<IActionResult> GetOfferApplicantsForOfferer(int offerId)
         {
             try
@@ -1347,7 +1352,7 @@ namespace bolsafeucn_back.src.API.Controllers
         }
 
         [HttpGet("offerent/my-offer/{offerId}/applicants/{studentId}")] // <-- 1. RUTA CORREGIDA (para no chocar con la del Admin)
-        [Authorize(Roles = "Offerent")]
+        [Authorize(Roles = "Offerent,Admin")]
         public async Task<ActionResult<ViewApplicantUserDetailDto>> GetApplicantDetail(
             int offerId,
             int studentId
@@ -1380,7 +1385,7 @@ namespace bolsafeucn_back.src.API.Controllers
         }
 
         [HttpPatch("offerent/my-offer/applicants/{status}")] // <-- 1. RUTA CORREGIDA (para no chocar con la del Admin)
-        [Authorize(Roles = "Offerent")]
+        [Authorize(Roles = "Offerent,Admin")]
         public async Task<IActionResult> AcceptApplicationOfferent(String status)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -1401,7 +1406,7 @@ namespace bolsafeucn_back.src.API.Controllers
         /// </summary>
         /// <param name="applicationId">El ID de la postulación a aceptar.</param>
         [HttpPatch("offerent/applications/{applicationId}/accept")]
-        [Authorize(Roles = "Offerent")]
+        [Authorize(Roles = "Offerent,Admin")]
         public async Task<IActionResult> AcceptApplication(int applicationId)
         {
             return await UpdateApplicationStatusInternal(
@@ -1417,7 +1422,7 @@ namespace bolsafeucn_back.src.API.Controllers
         /// </summary>
         /// <param name="applicationId">El ID de la postulación a rechazar.</param>
         [HttpPatch("offerent/applications/{applicationId}/reject")]
-        [Authorize(Roles = "Offerent")]
+        [Authorize(Roles = "Offerent,Admin")]
         public async Task<IActionResult> RejectApplication(int applicationId)
         {
             return await UpdateApplicationStatusInternal(
