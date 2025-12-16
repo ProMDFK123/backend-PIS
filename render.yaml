@@ -115,7 +115,7 @@ services:
 
       # URLs permitidas para CORS
       - key: AllowedOrigins__0
-        value: https://tu-frontend.onrender.com
+        value: https://frontend-pis.vercel.app
         # NOTA: Reemplazar con la URL real de tu frontend en Render
       - key: AllowedOrigins__1
         value: https://www.bolsafeucn.cl
